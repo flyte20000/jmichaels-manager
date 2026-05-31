@@ -1,0 +1,1920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>J Michael's Tavern & Grille — Executive Manager Report</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --surface2: #263348;
+  --border: #334155;
+  --gold: #f59e0b;
+  --gold2: #d97706;
+  --green: #10b981;
+  --red: #ef4444;
+  --yellow: #fbbf24;
+  --blue: #3b82f6;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --radius: 8px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;min-height:100vh}
+a{color:var(--gold);text-decoration:none}
+
+/* HEADER */
+.header{background:linear-gradient(135deg,#0f172a 0%,#1a0a00 50%,#0f172a 100%);border-bottom:2px solid var(--gold);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.header-left h1{font-size:22px;font-weight:700;color:var(--gold);letter-spacing:.5px}
+.header-left p{font-size:12px;color:var(--muted);margin-top:2px}
+.header-right{display:flex;gap:12px;align-items:center}
+.week-badge{background:var(--gold);color:#000;padding:6px 14px;border-radius:20px;font-weight:700;font-size:13px}
+.status-dot{width:10px;height:10px;border-radius:50%;background:var(--green);display:inline-block;margin-right:6px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* NAV */
+.nav{background:var(--surface);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;padding:0 16px}
+.nav-btn{padding:14px 20px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:13px;font-weight:500;border-bottom:3px solid transparent;white-space:nowrap;transition:all .2s}
+.nav-btn:hover{color:var(--text)}
+.nav-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
+
+/* MAIN */
+.main{padding:20px 24px;max-width:1400px;margin:0 auto}
+.section{display:none}
+.section.active{display:block}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card-title{font-size:15px;font-weight:700;color:var(--gold);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.card-title::before{content:'';display:block;width:4px;height:18px;background:var(--gold);border-radius:2px}
+
+/* KPI GRID */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:20px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;position:relative;overflow:hidden}
+.kpi::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--gold)}
+.kpi.green::after{background:var(--green)}
+.kpi.red::after{background:var(--red)}
+.kpi.blue::after{background:var(--blue)}
+.kpi.yellow::after{background:var(--yellow)}
+.kpi-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
+.kpi-value{font-size:26px;font-weight:700;color:var(--text)}
+.kpi-sub{font-size:12px;color:var(--muted);margin-top:4px}
+.kpi-trend{font-size:12px;margin-top:6px;font-weight:600}
+.kpi-trend.up{color:var(--green)}
+.kpi-trend.down{color:var(--red)}
+
+/* FORM ELEMENTS */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group.full{grid-column:1/-1}
+.form-group.half{grid-column:span 2}
+label{font-size:12px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.5px}
+input,select,textarea{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:9px 12px;color:var(--text);font-size:14px;width:100%;transition:border .2s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold)}
+input[type=number]{-moz-appearance:textfield}
+textarea{resize:vertical;min-height:80px}
+select option{background:var(--surface2)}
+
+/* BUTTONS */
+.btn{padding:9px 20px;border-radius:6px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .2s}
+.btn-primary{background:var(--gold);color:#000}
+.btn-primary:hover{background:var(--gold2)}
+.btn-danger{background:var(--red);color:#fff}
+.btn-success{background:var(--green);color:#fff}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-ghost:hover{border-color:var(--gold);color:var(--gold)}
+.btn-sm{padding:5px 12px;font-size:12px}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+
+/* TABLES */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:var(--surface2);color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.6px;padding:10px 12px;text-align:left;border-bottom:1px solid var(--border)}
+td{padding:10px 12px;border-bottom:1px solid #1e293b;vertical-align:middle}
+tr:hover td{background:rgba(255,255,255,.02)}
+td input{padding:6px 8px;font-size:13px}
+td select{padding:6px 8px;font-size:13px}
+
+/* STATUS BADGES */
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600}
+.badge-green{background:rgba(16,185,129,.15);color:var(--green)}
+.badge-red{background:rgba(239,68,68,.15);color:var(--red)}
+.badge-yellow{background:rgba(251,191,36,.15);color:var(--yellow)}
+.badge-blue{background:rgba(59,130,246,.15);color:var(--blue)}
+
+/* CHARTS */
+.chart-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:16px;margin-bottom:20px}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+.chart-card canvas{max-height:220px}
+
+/* ALERT */
+.alert{padding:12px 16px;border-radius:6px;margin-bottom:12px;font-size:13px;display:flex;align-items:center;gap:10px}
+.alert-red{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#fca5a5}
+.alert-yellow{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);color:#fde68a}
+.alert-green{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);color:#6ee7b7}
+
+/* DIVIDER */
+.divider{border:none;border-top:1px solid var(--border);margin:20px 0}
+
+/* SECTION HEADER */
+.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:gap}
+.section-header h2{font-size:20px;font-weight:700;color:var(--gold)}
+.section-header p{font-size:13px;color:var(--muted);margin-top:3px}
+
+/* HISTORY LIST */
+.history-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;transition:border .2s}
+.history-item:hover{border-color:var(--gold)}
+.history-meta{font-size:12px;color:var(--muted);margin-top:4px}
+
+/* MCA PROGRESS */
+.progress-bar{background:var(--surface2);border-radius:4px;height:8px;overflow:hidden;margin-top:8px}
+.progress-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--green),var(--yellow));transition:width .5s}
+.progress-fill.danger{background:linear-gradient(90deg,var(--yellow),var(--red))}
+
+/* CASH FLOW TABLE */
+.cf-day{font-weight:600;color:var(--gold)}
+.cf-neg{color:var(--red)}
+.cf-pos{color:var(--green)}
+
+/* PRINT */
+@media print{
+  .nav,.header-right,.btn-row,.no-print{display:none!important}
+  .section{display:block!important}
+  body{background:#fff;color:#000}
+  .card{border:1px solid #ccc;break-inside:avoid}
+  .kpi{break-inside:avoid}
+}
+
+/* RESPONSIVE */
+@media(max-width:600px){
+  .main{padding:12px}
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  .chart-grid{grid-template-columns:1fr}
+  .header-left h1{font-size:16px}
+}
+
+.required::after{content:' *';color:var(--red)}
+.calc-note{font-size:11px;color:var(--muted);margin-top:4px;font-style:italic}
+.highlight-box{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:6px;padding:14px;margin:12px 0}
+.highlight-box strong{color:var(--gold)}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>J Michael's Tavern &amp; Grille</h1>
+    <p><span class="status-dot"></span>Executive Management Report System</p>
+  </div>
+  <div class="header-right">
+    <span class="week-badge" id="currentWeekBadge">Loading...</span>
+    <button class="btn btn-primary" onclick="printReport()">Print / PDF</button>
+  </div>
+</div>
+
+<nav class="nav">
+  <button class="nav-btn active" onclick="showSection('dashboard',this)">Dashboard</button>
+  <button class="nav-btn" onclick="showSection('weekly',this)">Weekly Report</button>
+  <button class="nav-btn" onclick="showSection('cashflow',this)">Cash Flow</button>
+  <button class="nav-btn" onclick="showSection('mca',this)">MCA Tracker</button>
+  <button class="nav-btn" onclick="showSection('labor',this)">Labor</button>
+  <button class="nav-btn" onclick="showSection('vendors',this)">Vendors / AP</button>
+  <button class="nav-btn" onclick="showSection('history',this)">Report History</button>
+  <button class="nav-btn" onclick="showSection('settings',this)">Settings</button>
+</nav>
+
+<div class="main">
+
+<!-- ======================== DASHBOARD ======================== -->
+<div id="dashboard" class="section active">
+  <div class="section-header">
+    <div>
+      <h2>Executive Dashboard</h2>
+      <p>Live KPIs for current week — updated from latest report</p>
+    </div>
+    <div class="no-print">
+      <button class="btn btn-ghost btn-sm" onclick="loadDashboard()">Refresh</button>
+    </div>
+  </div>
+
+  <div id="dashAlerts"></div>
+
+  <div class="kpi-grid" id="kpiGrid">
+    <div class="kpi"><div class="kpi-label">Gross Sales</div><div class="kpi-value" id="kpi-sales">—</div><div class="kpi-sub">This Week</div><div class="kpi-trend" id="kpi-sales-trend"></div></div>
+    <div class="kpi green"><div class="kpi-label">Cash Position</div><div class="kpi-value" id="kpi-cash">—</div><div class="kpi-sub">Bank Checking</div></div>
+    <div class="kpi blue"><div class="kpi-label">Labor %</div><div class="kpi-value" id="kpi-labor">—</div><div class="kpi-sub">Target: ≤30%</div><div class="kpi-trend" id="kpi-labor-status"></div></div>
+    <div class="kpi"><div class="kpi-label">Food Cost %</div><div class="kpi-value" id="kpi-food">—</div><div class="kpi-sub">Target: ≤32%</div><div class="kpi-trend" id="kpi-food-status"></div></div>
+    <div class="kpi"><div class="kpi-label">Liquor Cost %</div><div class="kpi-value" id="kpi-liquor">—</div><div class="kpi-sub">Target: ≤22%</div><div class="kpi-trend" id="kpi-liquor-status"></div></div>
+    <div class="kpi yellow"><div class="kpi-label">MCA Balance</div><div class="kpi-value" id="kpi-mca">—</div><div class="kpi-sub">Daily Draw</div><div class="kpi-trend" id="kpi-mca-sub"></div></div>
+    <div class="kpi"><div class="kpi-label">Vendor Past Due</div><div class="kpi-value" id="kpi-pastdue">—</div><div class="kpi-sub">Total Overdue</div></div>
+    <div class="kpi"><div class="kpi-label">Total AP</div><div class="kpi-value" id="kpi-ap">—</div><div class="kpi-sub">All Vendors</div></div>
+    <div class="kpi green"><div class="kpi-label">Review Score</div><div class="kpi-value" id="kpi-review">—</div><div class="kpi-sub">Avg Rating</div></div>
+  </div>
+
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="card-title">Weekly Sales Trend</div>
+      <canvas id="salesChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="card-title">Cost % Breakdown</div>
+      <canvas id="costChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="card-title">Cash Flow (Last 7 Days)</div>
+      <canvas id="cashChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="card-title">MCA Paydown Progress</div>
+      <canvas id="mcaChart"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Open Action Items</div>
+    <div id="openActions">
+      <p style="color:var(--muted)">No open action items. Submit a weekly report to populate.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== WEEKLY REPORT ======================== -->
+<div id="weekly" class="section">
+  <div class="section-header">
+    <div>
+      <h2>Monday Morning Executive Report</h2>
+      <p>Due by 10:00 AM every Monday — Complete all sections before submitting</p>
+    </div>
+  </div>
+
+  <div class="alert alert-yellow">
+    <span>⚠️</span>
+    <span>All fields marked <strong>*</strong> are required. This report must be complete, accurate, and submitted every Monday by 10:00 AM.</span>
+  </div>
+
+  <form id="weeklyForm">
+
+  <!-- Reporting Info -->
+  <div class="card">
+    <div class="card-title">Report Information</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="required">Manager Name</label>
+        <input type="text" id="r_manager" placeholder="Full name" required>
+      </div>
+      <div class="form-group">
+        <label class="required">Report Week</label>
+        <input type="week" id="r_week" required>
+      </div>
+      <div class="form-group">
+        <label class="required">Submission Date/Time</label>
+        <input type="datetime-local" id="r_submitted" required>
+      </div>
+      <div class="form-group">
+        <label>Submitted On Time?</label>
+        <select id="r_ontime">
+          <option value="yes">Yes — Before 10:00 AM Monday</option>
+          <option value="no">No — Late Submission</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sales Summary -->
+  <div class="card">
+    <div class="card-title">1. Sales Summary</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="required">Total Gross Sales</label>
+        <input type="number" id="s_gross" step="0.01" placeholder="0.00" oninput="calcSales()">
+      </div>
+      <div class="form-group">
+        <label class="required">Food Sales</label>
+        <input type="number" id="s_food" step="0.01" placeholder="0.00" oninput="calcSales()">
+      </div>
+      <div class="form-group">
+        <label class="required">Beverage / Bar Sales</label>
+        <input type="number" id="s_bev" step="0.01" placeholder="0.00" oninput="calcSales()">
+      </div>
+      <div class="form-group">
+        <label>Event / Catering Sales</label>
+        <input type="number" id="s_event" step="0.01" placeholder="0.00" oninput="calcSales()">
+      </div>
+      <div class="form-group">
+        <label>Prior Week Sales</label>
+        <input type="number" id="s_prior_week" step="0.01" placeholder="0.00" oninput="calcSales()">
+      </div>
+      <div class="form-group">
+        <label>Same Week Last Year</label>
+        <input type="number" id="s_prior_year" step="0.01" placeholder="0.00" oninput="calcSales()">
+      </div>
+      <div class="form-group">
+        <label>Avg Daily Sales</label>
+        <input type="text" id="s_daily_avg" readonly style="color:var(--gold)">
+      </div>
+      <div class="form-group">
+        <label>Week-over-Week Change</label>
+        <input type="text" id="s_wow" readonly style="color:var(--gold)">
+      </div>
+      <div class="form-group">
+        <label>Covers / Guest Count</label>
+        <input type="number" id="s_covers" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>Avg Check Per Guest</label>
+        <input type="text" id="s_avg_check" readonly style="color:var(--gold)">
+      </div>
+      <div class="form-group full">
+        <label>Sales Notes / Explanation of Variances</label>
+        <textarea id="s_notes" placeholder="Explain any significant changes in sales volume, top-selling items, slow periods, etc."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cash Position -->
+  <div class="card">
+    <div class="card-title">2. Cash Position</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="required">Checking Account Balance</label>
+        <input type="number" id="c_checking" step="0.01" placeholder="0.00" oninput="calcCash()">
+      </div>
+      <div class="form-group">
+        <label>Savings Account Balance</label>
+        <input type="number" id="c_savings" step="0.01" placeholder="0.00" oninput="calcCash()">
+      </div>
+      <div class="form-group">
+        <label class="required">Petty Cash on Hand</label>
+        <input type="number" id="c_petty" step="0.01" placeholder="0.00" oninput="calcCash()">
+      </div>
+      <div class="form-group">
+        <label class="required">Total Deposits This Week</label>
+        <input type="number" id="c_deposits" step="0.01" placeholder="0.00">
+      </div>
+      <div class="form-group">
+        <label>Outstanding Checks / Pending Payments</label>
+        <input type="number" id="c_outstanding" step="0.01" placeholder="0.00" oninput="calcCash()">
+      </div>
+      <div class="form-group">
+        <label>Credit Card Deposits Pending</label>
+        <input type="number" id="c_cc_pending" step="0.01" placeholder="0.00" oninput="calcCash()">
+      </div>
+      <div class="form-group">
+        <label>Net Available Cash</label>
+        <input type="text" id="c_net" readonly style="color:var(--gold);font-weight:700">
+        <span class="calc-note">Checking + Savings + Petty Cash − Outstanding</span>
+      </div>
+      <div class="form-group">
+        <label>Total Cash &amp; Near-Cash</label>
+        <input type="text" id="c_total" readonly style="color:var(--gold)">
+      </div>
+      <div class="form-group full">
+        <label>Bank Statement Screenshot Attached?</label>
+        <select id="c_bank_attached">
+          <option value="yes">Yes — Attached</option>
+          <option value="no">No — Will Follow</option>
+          <option value="na">N/A</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>Cash Position Notes / Concerns</label>
+        <textarea id="c_notes" placeholder="Note any cash flow concerns, upcoming large payments, or unusual bank activity."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- MCA Tracking -->
+  <div class="card">
+    <div class="card-title">3. MCA Tracking</div>
+    <div class="alert alert-red" style="margin-bottom:14px">
+      <span>🔴</span><span>MCA obligations are a top financial priority. Report every detail accurately each week.</span>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="required">MCA Provider</label>
+        <input type="text" id="m_provider" placeholder="Provider name">
+      </div>
+      <div class="form-group">
+        <label class="required">Original MCA Amount</label>
+        <input type="number" id="m_original" step="0.01" placeholder="0.00">
+      </div>
+      <div class="form-group">
+        <label class="required">Current Outstanding Balance</label>
+        <input type="number" id="m_balance" step="0.01" placeholder="0.00" oninput="calcMCA()">
+      </div>
+      <div class="form-group">
+        <label class="required">Daily Debit Amount</label>
+        <input type="number" id="m_daily" step="0.01" placeholder="0.00" oninput="calcMCA()">
+      </div>
+      <div class="form-group">
+        <label>Factor Rate</label>
+        <input type="number" id="m_factor" step="0.001" placeholder="e.g. 1.35">
+      </div>
+      <div class="form-group">
+        <label>Est. Business Days to Payoff</label>
+        <input type="text" id="m_days" readonly style="color:var(--gold)">
+        <span class="calc-note">Balance ÷ Daily Debit</span>
+      </div>
+      <div class="form-group">
+        <label>Weekly MCA Total (5 days)</label>
+        <input type="text" id="m_weekly_total" readonly style="color:var(--gold)">
+      </div>
+      <div class="form-group">
+        <label>MCA as % of Weekly Sales</label>
+        <input type="text" id="m_pct_sales" readonly style="color:var(--gold)">
+      </div>
+      <div class="form-group">
+        <label>MCA Statement Attached?</label>
+        <select id="m_attached">
+          <option value="yes">Yes — Attached</option>
+          <option value="no">No — Will Follow</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Any ACH Issues This Week?</label>
+        <select id="m_issues">
+          <option value="no">No — All Debits Cleared</option>
+          <option value="yes">Yes — See Notes</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>MCA Notes / Concerns</label>
+        <textarea id="m_notes" placeholder="Note any missed debits, renegotiation discussions, or cash flow impact from MCA obligations."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Labor Report -->
+  <div class="card">
+    <div class="card-title">4. Labor Report</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="required">Total Labor Hours</label>
+        <input type="number" id="l_hours" step="0.5" placeholder="0.0" oninput="calcLabor()">
+      </div>
+      <div class="form-group">
+        <label class="required">Total Labor Cost</label>
+        <input type="number" id="l_cost" step="0.01" placeholder="0.00" oninput="calcLabor()">
+      </div>
+      <div class="form-group">
+        <label>Management Labor Cost</label>
+        <input type="number" id="l_mgmt" step="0.01" placeholder="0.00">
+      </div>
+      <div class="form-group">
+        <label>Front-of-House Labor Cost</label>
+        <input type="number" id="l_foh" step="0.01" placeholder="0.00">
+      </div>
+      <div class="form-group">
+        <label>Back-of-House / Kitchen Cost</label>
+        <input type="number" id="l_boh" step="0.01" placeholder="0.00">
+      </div>
+      <div class="form-group">
+        <label>Bar Staff Labor Cost</label>
+        <input type="number" id="l_bar" step="0.01" placeholder="0.00">
+      </div>
+      <div class="form-group">
+        <label>Overtime Hours</label>
+        <input type="number" id="l_ot_hours" step="0.5" placeholder="0.0">
+      </div>
+      <div class="form-group">
+        <label>Overtime Cost</label>
+        <input type="number" id="l_ot_cost" step="0.01" placeholder="0.00">
+      </div>
+      <div class="form-group">
+        <label>Labor % of Sales</label>
+        <input type="text" id="l_pct" readonly style="color:var(--gold);font-weight:700">
+        <span class="calc-note">Target: ≤ 30%</span>
+      </div>
+      <div class="form-group">
+        <label>Labor Status</label>
+        <input type="text" id="l_status" readonly>
+      </div>
+      <div class="form-group">
+        <label>Payroll Period</label>
+        <input type="text" id="l_period" placeholder="e.g. May 26 – Jun 1">
+      </div>
+      <div class="form-group">
+        <label>Next Payroll Date</label>
+        <input type="date" id="l_next_payroll">
+      </div>
+      <div class="form-group">
+        <label>Next Payroll Estimated Amount</label>
+        <input type="number" id="l_next_amount" step="0.01" placeholder="0.00">
+      </div>
+      <div class="form-group">
+        <label>Labor Report Attached?</label>
+        <select id="l_attached">
+          <option value="yes">Yes — Attached</option>
+          <option value="no">No — Will Follow</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>Labor Notes / Staffing Issues</label>
+        <textarea id="l_notes" placeholder="Note call-outs, scheduling issues, over-staffed shifts, high overtime, turnover, etc."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Food & Beverage Control -->
+  <div class="card">
+    <div class="card-title">5. Food &amp; Beverage Cost Control</div>
+    <div class="form-grid">
+      <div class="form-group half" style="grid-column:1/-1">
+        <div style="color:var(--gold);font-size:13px;font-weight:600;margin-bottom:10px">FOOD COST</div>
+      </div>
+      <div class="form-group">
+        <label>Beginning Food Inventory</label>
+        <input type="number" id="f_beg" step="0.01" placeholder="0.00" oninput="calcFnB()">
+      </div>
+      <div class="form-group">
+        <label>Food Purchases This Week</label>
+        <input type="number" id="f_purch" step="0.01" placeholder="0.00" oninput="calcFnB()">
+      </div>
+      <div class="form-group">
+        <label>Ending Food Inventory</label>
+        <input type="number" id="f_end" step="0.01" placeholder="0.00" oninput="calcFnB()">
+      </div>
+      <div class="form-group">
+        <label>Food Cost of Goods Used</label>
+        <input type="text" id="f_cogs" readonly style="color:var(--gold)">
+        <span class="calc-note">Beg + Purchases − Ending</span>
+      </div>
+      <div class="form-group">
+        <label>Food Cost %</label>
+        <input type="text" id="f_pct" readonly style="color:var(--gold);font-weight:700">
+        <span class="calc-note">Target: ≤ 32%</span>
+      </div>
+      <div class="form-group">
+        <label>Food Cost Status</label>
+        <input type="text" id="f_status" readonly>
+      </div>
+
+      <div class="form-group" style="grid-column:1/-1"><hr class="divider" style="margin:4px 0"><div style="color:var(--gold);font-size:13px;font-weight:600;margin-top:4px">LIQUOR / BAR COST</div></div>
+
+      <div class="form-group">
+        <label>Beginning Liquor Inventory</label>
+        <input type="number" id="lq_beg" step="0.01" placeholder="0.00" oninput="calcFnB()">
+      </div>
+      <div class="form-group">
+        <label>Liquor Purchases This Week</label>
+        <input type="number" id="lq_purch" step="0.01" placeholder="0.00" oninput="calcFnB()">
+      </div>
+      <div class="form-group">
+        <label>Ending Liquor Inventory</label>
+        <input type="number" id="lq_end" step="0.01" placeholder="0.00" oninput="calcFnB()">
+      </div>
+      <div class="form-group">
+        <label>Liquor COGS</label>
+        <input type="text" id="lq_cogs" readonly style="color:var(--gold)">
+      </div>
+      <div class="form-group">
+        <label>Liquor Cost %</label>
+        <input type="text" id="lq_pct" readonly style="color:var(--gold);font-weight:700">
+        <span class="calc-note">Target: ≤ 22%</span>
+      </div>
+      <div class="form-group">
+        <label>Beer Cost %</label>
+        <input type="number" id="beer_pct" step="0.1" placeholder="0.0">
+      </div>
+      <div class="form-group">
+        <label>Wine Cost %</label>
+        <input type="number" id="wine_pct" step="0.1" placeholder="0.0">
+      </div>
+      <div class="form-group">
+        <label>Inventory Summary Attached?</label>
+        <select id="f_attached">
+          <option value="yes">Yes — Attached</option>
+          <option value="no">No — Will Follow</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>F&amp;B Notes / Waste / Variance</label>
+        <textarea id="f_notes" placeholder="Note any high-cost items, waste issues, theft concerns, spoilage, or vendor price increases."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Accounts Payable -->
+  <div class="card">
+    <div class="card-title">6. Accounts Payable</div>
+    <div class="btn-row no-print" style="margin-bottom:14px;margin-top:0">
+      <button type="button" class="btn btn-ghost btn-sm" onclick="addAPRow()">+ Add Vendor</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Vendor</th>
+            <th>Invoice #</th>
+            <th>Amount</th>
+            <th>Due Date</th>
+            <th>Status</th>
+            <th>Critical</th>
+            <th class="no-print">Remove</th>
+          </tr>
+        </thead>
+        <tbody id="apTable"></tbody>
+        <tfoot>
+          <tr>
+            <td colspan="2" style="font-weight:700;color:var(--gold)">TOTALS</td>
+            <td id="ap_total" style="font-weight:700;color:var(--gold)">$0.00</td>
+            <td></td>
+            <td id="ap_pastdue_count">0 Past Due</td>
+            <td></td>
+            <td class="no-print"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <div class="form-grid" style="margin-top:14px">
+      <div class="form-group">
+        <label>Total AP This Week</label>
+        <input type="text" id="ap_total_display" readonly style="color:var(--gold)">
+      </div>
+      <div class="form-group">
+        <label>Past Due Amount</label>
+        <input type="text" id="ap_pastdue_display" readonly style="color:var(--red)">
+      </div>
+      <div class="form-group">
+        <label>AP Aging Report Attached?</label>
+        <select id="ap_attached">
+          <option value="yes">Yes — Attached</option>
+          <option value="no">No — Will Follow</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>Vendor / AP Notes</label>
+        <textarea id="ap_notes" placeholder="Note any vendor disputes, critical past-due situations, payment arrangements, or supply issues."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Operations Report -->
+  <div class="card">
+    <div class="card-title">7. Operations Report</div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Equipment Issues / Repairs Needed</label>
+        <textarea id="op_equipment" placeholder="List any broken equipment, repair needs, or maintenance concerns."></textarea>
+      </div>
+      <div class="form-group full">
+        <label>Staffing / HR Issues</label>
+        <textarea id="op_staffing" placeholder="Note any terminations, hires, disciplinary actions, or scheduling concerns."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Customer Review Score (Avg)</label>
+        <input type="number" id="op_review_score" step="0.1" min="1" max="5" placeholder="4.5">
+      </div>
+      <div class="form-group">
+        <label>New Reviews This Week</label>
+        <input type="number" id="op_review_count" placeholder="0">
+      </div>
+      <div class="form-group full">
+        <label>Customer Feedback Summary</label>
+        <textarea id="op_feedback" placeholder="Summarize customer complaints, compliments, and online review trends."></textarea>
+      </div>
+      <div class="form-group full">
+        <label>Event / Promotion Performance</label>
+        <textarea id="op_events" placeholder="Recap any events, specials, or promotions this week. Revenue generated, attendance, profitability."></textarea>
+      </div>
+      <div class="form-group full">
+        <label>Other Operational Notes</label>
+        <textarea id="op_other" placeholder="Any other operational observations or concerns."></textarea>
+      </div>
+    </div>
+
+    <!-- Action Items -->
+    <hr class="divider">
+    <div style="font-size:14px;font-weight:700;color:var(--gold);margin-bottom:12px">Action Items &amp; Deadlines</div>
+    <div class="btn-row no-print" style="margin-bottom:12px;margin-top:0">
+      <button type="button" class="btn btn-ghost btn-sm" onclick="addActionRow()">+ Add Action Item</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Action Item</th><th>Assigned To</th><th>Deadline</th><th>Status</th><th class="no-print">Remove</th></tr>
+        </thead>
+        <tbody id="actionTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Submit -->
+  <div class="card">
+    <div class="card-title">Submit Report</div>
+    <div class="highlight-box">
+      <strong>Manager Certification:</strong> By submitting this report, I certify that all information provided is accurate, complete, and reflects actual business operations for the reported week. I understand that inaccurate reporting is grounds for disciplinary action.
+    </div>
+    <div class="form-grid" style="margin-top:14px">
+      <div class="form-group">
+        <label>POS Report Attached?</label>
+        <select id="att_pos"><option value="yes">Yes</option><option value="no">No</option></select>
+      </div>
+      <div class="form-group">
+        <label>Labor Report Attached?</label>
+        <select id="att_labor"><option value="yes">Yes</option><option value="no">No</option></select>
+      </div>
+      <div class="form-group">
+        <label>Bank Statement Attached?</label>
+        <select id="att_bank"><option value="yes">Yes</option><option value="no">No</option></select>
+      </div>
+      <div class="form-group">
+        <label>MCA Statement Attached?</label>
+        <select id="att_mca"><option value="yes">Yes</option><option value="no">No</option></select>
+      </div>
+      <div class="form-group">
+        <label>Vendor Statements Attached?</label>
+        <select id="att_vendor"><option value="yes">Yes</option><option value="no">No</option></select>
+      </div>
+      <div class="form-group">
+        <label>Inventory Summary Attached?</label>
+        <select id="att_inv"><option value="yes">Yes</option><option value="no">No</option></select>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button type="button" class="btn btn-primary" onclick="saveReport()">Submit Weekly Report</button>
+      <button type="button" class="btn btn-ghost" onclick="saveDraft()">Save Draft</button>
+      <button type="button" class="btn btn-ghost" onclick="clearForm()">Clear Form</button>
+    </div>
+    <div id="submitMsg" style="margin-top:12px"></div>
+  </div>
+
+  </form>
+</div>
+
+<!-- ======================== CASH FLOW ======================== -->
+<div id="cashflow" class="section">
+  <div class="section-header">
+    <div>
+      <h2>Daily Cash Flow Tracker</h2>
+      <p>Monitor daily deposits, obligations, and risk periods</p>
+    </div>
+    <button class="btn btn-primary btn-sm no-print" onclick="saveCashFlow()">Save Cash Flow</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Week of</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Week</label>
+        <input type="week" id="cf_week">
+      </div>
+      <div class="form-group">
+        <label>Opening Bank Balance (Monday AM)</label>
+        <input type="number" id="cf_open" step="0.01" placeholder="0.00" oninput="calcCashFlow()">
+      </div>
+      <div class="form-group">
+        <label>Weekly Payroll Obligation</label>
+        <input type="number" id="cf_payroll" step="0.01" placeholder="0.00" oninput="calcCashFlow()">
+      </div>
+      <div class="form-group">
+        <label>Weekly MCA Total Obligation</label>
+        <input type="number" id="cf_mca_weekly" step="0.01" placeholder="0.00" oninput="calcCashFlow()">
+      </div>
+      <div class="form-group">
+        <label>Rent / Lease Payment</label>
+        <input type="number" id="cf_rent" step="0.01" placeholder="0.00" oninput="calcCashFlow()">
+      </div>
+      <div class="form-group">
+        <label>Utilities Estimated</label>
+        <input type="number" id="cf_util" step="0.01" placeholder="0.00" oninput="calcCashFlow()">
+      </div>
+      <div class="form-group">
+        <label>Vendor Payments Due This Week</label>
+        <input type="number" id="cf_vendors" step="0.01" placeholder="0.00" oninput="calcCashFlow()">
+      </div>
+      <div class="form-group">
+        <label>Other Known Obligations</label>
+        <input type="number" id="cf_other" step="0.01" placeholder="0.00" oninput="calcCashFlow()">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Daily Deposits &amp; Running Balance</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Day</th><th>Expected Sales</th><th>Actual Deposit</th><th>MCA Debit</th><th>Other Outflows</th><th>Running Balance</th><th>Status</th></tr>
+        </thead>
+        <tbody id="cfTable"></tbody>
+        <tfoot>
+          <tr>
+            <td style="font-weight:700;color:var(--gold)">WEEKLY TOTALS</td>
+            <td id="cf_total_expected" style="color:var(--gold)">$0.00</td>
+            <td id="cf_total_deposits" style="color:var(--green)">$0.00</td>
+            <td id="cf_total_mca" style="color:var(--red)">$0.00</td>
+            <td id="cf_total_out" style="color:var(--red)">$0.00</td>
+            <td id="cf_end_balance" style="font-weight:700;color:var(--gold)">$0.00</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Cash Flow Summary &amp; Risk Assessment</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Total Weekly Obligations</label>
+        <input type="text" id="cf_total_obligations" readonly style="color:var(--red)">
+      </div>
+      <div class="form-group">
+        <label>Projected End Balance</label>
+        <input type="text" id="cf_projected_end" readonly style="color:var(--gold);font-weight:700">
+      </div>
+      <div class="form-group">
+        <label>Cash Cushion / Shortfall</label>
+        <input type="text" id="cf_cushion" readonly>
+      </div>
+      <div class="form-group">
+        <label>Risk Level</label>
+        <input type="text" id="cf_risk" readonly>
+      </div>
+      <div class="form-group full">
+        <label>Risk Periods / Notes</label>
+        <textarea id="cf_notes" placeholder="Note any days where cash may be critically low, expected shortfalls, or mitigation plans."></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== MCA TRACKER ======================== -->
+<div id="mca" class="section">
+  <div class="section-header">
+    <div><h2>MCA Tracking Module</h2><p>Merchant Cash Advance — full obligation tracking</p></div>
+    <button class="btn btn-primary btn-sm no-print" onclick="saveMCASettings()">Save MCA Data</button>
+  </div>
+
+  <div class="alert alert-red">
+    <span>🔴</span><span><strong>Critical Obligation:</strong> MCA debits are automatic and non-negotiable. Maintain sufficient daily balance to avoid NSF fees and default. Monitor every business day.</span>
+  </div>
+
+  <div class="card">
+    <div class="card-title">MCA Details</div>
+    <div class="form-grid">
+      <div class="form-group"><label>MCA Provider / Lender</label><input type="text" id="mca_provider" placeholder="e.g. Kapitus, Credibly, etc."></div>
+      <div class="form-group"><label>Contract / Account Number</label><input type="text" id="mca_account"></div>
+      <div class="form-group"><label>Original Advance Amount</label><input type="number" id="mca_original" step="0.01" placeholder="0.00" oninput="calcMCAFull()"></div>
+      <div class="form-group"><label>Total Payback Amount</label><input type="number" id="mca_payback" step="0.01" placeholder="0.00" oninput="calcMCAFull()"></div>
+      <div class="form-group"><label>Factor Rate</label><input type="number" id="mca_factor" step="0.001" placeholder="1.350" oninput="calcMCAFull()"></div>
+      <div class="form-group"><label>Effective APR (estimated)</label><input type="text" id="mca_apr" readonly style="color:var(--red)"></div>
+      <div class="form-group"><label>Start Date</label><input type="date" id="mca_start" oninput="calcMCAFull()"></div>
+      <div class="form-group"><label>Daily Debit Amount</label><input type="number" id="mca_daily_debit" step="0.01" placeholder="0.00" oninput="calcMCAFull()"></div>
+      <div class="form-group"><label>Current Outstanding Balance</label><input type="number" id="mca_current_balance" step="0.01" placeholder="0.00" oninput="calcMCAFull()"></div>
+      <div class="form-group"><label>Amount Paid to Date</label><input type="text" id="mca_paid" readonly style="color:var(--green)"></div>
+      <div class="form-group"><label>Est. Business Days Remaining</label><input type="text" id="mca_days_left" readonly style="color:var(--gold)"></div>
+      <div class="form-group"><label>Estimated Payoff Date</label><input type="text" id="mca_payoff_date" readonly style="color:var(--gold)"></div>
+      <div class="form-group"><label>% of Payback Completed</label><input type="text" id="mca_pct_done" readonly></div>
+      <div class="form-group"><label>Debit Day</label>
+        <select id="mca_debit_day">
+          <option>Monday–Friday (Every Business Day)</option>
+          <option>Monday–Saturday</option>
+          <option>Daily (7 days)</option>
+          <option>Weekly</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-top:16px">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Payback Progress</div>
+      <div class="progress-bar"><div class="progress-fill" id="mca_progress_bar" style="width:0%"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px">
+        <span>Start</span><span id="mca_progress_label">0% complete</span><span>Paid Off</span>
+      </div>
+    </div>
+    <div class="form-grid" style="margin-top:16px">
+      <div class="form-group full"><label>MCA Notes / Communication Log</label><textarea id="mca_notes" rows="4" placeholder="Log any calls with MCA provider, renegotiation attempts, or payment concerns."></textarea></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Weekly MCA Impact on Operations</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Weekly MCA Cost (5 days)</label><input type="text" id="mca_weekly_cost" readonly style="color:var(--red)"></div>
+      <div class="form-group"><label>Monthly MCA Cost (est.)</label><input type="text" id="mca_monthly_cost" readonly style="color:var(--red)"></div>
+      <div class="form-group"><label>MCA as % of Target Weekly Sales</label><input type="text" id="mca_pct_weekly" readonly></div>
+      <div class="form-group"><label>Target Weekly Sales for Coverage</label><input type="number" id="mca_target_sales" step="0.01" placeholder="0.00" oninput="calcMCAFull()"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== LABOR ======================== -->
+<div id="labor" class="section">
+  <div class="section-header">
+    <div><h2>Labor Analytics</h2><p>Weekly labor cost breakdown and trend analysis</p></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Labor Summary — Current Week</div>
+    <p style="color:var(--muted);font-size:13px">Submit the Weekly Report to populate labor data. Use this section to view trends over time.</p>
+    <div id="laborTrendChart" style="margin-top:16px">
+      <canvas id="laborChart" style="max-height:280px"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Labor Targets &amp; Standards</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Category</th><th>Target %</th><th>Warning Threshold</th><th>Action Required</th></tr></thead>
+        <tbody>
+          <tr><td>Total Labor</td><td><span class="badge badge-green">≤ 30%</span></td><td>31–34%</td><td>Review scheduling, cut shifts</td></tr>
+          <tr><td>Kitchen / BOH</td><td><span class="badge badge-green">≤ 12%</span></td><td>13–15%</td><td>Review prep hours, overtime</td></tr>
+          <tr><td>FOH / Service</td><td><span class="badge badge-green">≤ 10%</span></td><td>11–13%</td><td>Adjust floor coverage</td></tr>
+          <tr><td>Bar Staff</td><td><span class="badge badge-green">≤ 5%</span></td><td>6–8%</td><td>Review bar scheduling</td></tr>
+          <tr><td>Management</td><td><span class="badge badge-green">≤ 7%</span></td><td>&gt; 8%</td><td>Evaluate management hours</td></tr>
+          <tr><td>Overtime</td><td><span class="badge badge-green">$0</span></td><td>Any OT</td><td>Immediate schedule adjustment</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== VENDORS ======================== -->
+<div id="vendors" class="section">
+  <div class="section-header">
+    <div><h2>Vendor Payables Dashboard</h2><p>Master vendor list, payment status, and AP management</p></div>
+    <button class="btn btn-primary btn-sm no-print" onclick="saveVendors()">Save Vendors</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Master Vendor List</div>
+    <div class="btn-row no-print" style="margin-bottom:12px;margin-top:0">
+      <button class="btn btn-ghost btn-sm" onclick="addVendorMaster()">+ Add Vendor</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Vendor Name</th><th>Category</th><th>Contact</th><th>Terms</th><th>Avg Weekly</th><th>Current Balance</th><th>Status</th><th>Priority</th><th class="no-print">Remove</th></tr>
+        </thead>
+        <tbody id="vendorMasterTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Vendor Payment Standards</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Priority</th><th>Vendor Type</th><th>Why Critical</th><th>Action if Past Due</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-red">P1 — Critical</span></td><td>Food purveyors, alcohol distributors</td><td>COD risk, product cutoff</td><td>Pay immediately, call today</td></tr>
+          <tr><td><span class="badge badge-yellow">P2 — Important</span></td><td>Utilities, insurance, POS</td><td>Service interruption risk</td><td>Contact within 24 hours</td></tr>
+          <tr><td><span class="badge badge-blue">P3 — Standard</span></td><td>Supplies, linen, cleaning</td><td>Operations impact</td><td>Arrange payment plan</td></tr>
+          <tr><td><span class="badge badge-green">P4 — Low</span></td><td>Misc services</td><td>Low immediate impact</td><td>Address when cash allows</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== HISTORY ======================== -->
+<div id="history" class="section">
+  <div class="section-header">
+    <div><h2>Report History</h2><p>All submitted weekly reports</p></div>
+    <button class="btn btn-danger btn-sm no-print" onclick="confirmClearHistory()">Clear All History</button>
+  </div>
+  <div id="historyList">
+    <p style="color:var(--muted)">No reports submitted yet.</p>
+  </div>
+</div>
+
+<!-- ======================== SETTINGS ======================== -->
+<div id="settings" class="section">
+  <div class="section-header">
+    <div><h2>Settings</h2><p>Configure restaurant details and targets</p></div>
+    <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save Settings</button>
+  </div>
+  <div class="card">
+    <div class="card-title">Restaurant Information</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Restaurant Name</label><input type="text" id="set_name" value="J Michael's Tavern &amp; Grille"></div>
+      <div class="form-group"><label>Owner / Partner Name(s)</label><input type="text" id="set_owner" placeholder=""></div>
+      <div class="form-group"><label>Address</label><input type="text" id="set_address"></div>
+      <div class="form-group"><label>Phone</label><input type="text" id="set_phone"></div>
+      <div class="form-group"><label>Report Email</label><input type="email" id="set_email" placeholder="owner@email.com"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">KPI Targets</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Labor % Target</label><input type="number" id="set_labor_target" value="30" step="0.5"></div>
+      <div class="form-group"><label>Food Cost % Target</label><input type="number" id="set_food_target" value="32" step="0.5"></div>
+      <div class="form-group"><label>Liquor Cost % Target</label><input type="number" id="set_liquor_target" value="22" step="0.5"></div>
+      <div class="form-group"><label>Minimum Cash Cushion</label><input type="number" id="set_min_cash" value="5000" step="100"></div>
+      <div class="form-group"><label>Weekly Sales Target</label><input type="number" id="set_sales_target" value="0" step="100"></div>
+      <div class="form-group"><label>Rent Amount</label><input type="number" id="set_rent" value="0" step="100"></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end main -->
+
+<!-- Report View Modal -->
+<div id="reportModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;overflow-y:auto">
+  <div style="max-width:900px;margin:40px auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:30px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <h3 style="color:var(--gold)">Report Detail</h3>
+      <button class="btn btn-ghost" onclick="closeModal()">Close</button>
+    </div>
+    <div id="reportModalContent"></div>
+  </div>
+</div>
+
+<script>
+// ─── GLOBALS ──────────────────────────────────────────────────────────────────
+const DB = {
+  get: k => { try { return JSON.parse(localStorage.getItem('jmt_'+k)) } catch(e) { return null } },
+  set: (k,v) => localStorage.setItem('jmt_'+k, JSON.stringify(v)),
+  push: (k,v) => { const arr = DB.get(k) || []; arr.push(v); DB.set(k, arr) }
+};
+const $ = id => document.getElementById(id);
+const fmt = n => isNaN(n) ? '$0.00' : '$' + parseFloat(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const pct = n => isNaN(n) ? '0.0%' : parseFloat(n||0).toFixed(1) + '%';
+const val = id => parseFloat($(id)?.value || 0) || 0;
+const str = id => $(id)?.value?.trim() || '';
+let salesChartInst, costChartInst, cashChartInst, mcaChartInst, laborChartInst;
+
+// ─── NAVIGATION ───────────────────────────────────────────────────────────────
+function showSection(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  $(id).classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(id === 'dashboard') loadDashboard();
+  if(id === 'history') loadHistory();
+  if(id === 'mca') loadMCASettings();
+  if(id === 'vendors') loadVendors();
+  if(id === 'cashflow') initCashFlowTable();
+  if(id === 'labor') renderLaborChart();
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+function init() {
+  // Set current week badge
+  const now = new Date();
+  const weekStr = getISOWeek(now);
+  $('currentWeekBadge').textContent = 'Week ' + weekStr;
+
+  // Set default form values
+  const weekInput = $('r_week');
+  if(weekInput) {
+    const y = now.getFullYear();
+    const w = getWeekNumber(now);
+    weekInput.value = y + '-W' + String(w).padStart(2,'0');
+  }
+  const dtInput = $('r_submitted');
+  if(dtInput) {
+    const iso = new Date(now - now.getTimezoneOffset()*60000).toISOString().slice(0,16);
+    dtInput.value = iso;
+  }
+  const cfWeek = $('cf_week');
+  if(cfWeek) {
+    const y = now.getFullYear();
+    const w = getWeekNumber(now);
+    cfWeek.value = y + '-W' + String(w).padStart(2,'0');
+  }
+
+  initAPTable();
+  initActionTable();
+  initCashFlowTable();
+  loadSettings();
+  loadDashboard();
+  loadDraft();
+}
+
+function getWeekNumber(d) {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay()||7));
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
+  return Math.ceil((((date - yearStart) / 86400000) + 1)/7);
+}
+
+function getISOWeek(d) {
+  return d.getFullYear() + '-W' + String(getWeekNumber(d)).padStart(2,'0');
+}
+
+// ─── CALCULATIONS ─────────────────────────────────────────────────────────────
+function calcSales() {
+  const gross = val('s_gross');
+  const covers = val('s_covers');
+  const priorWeek = val('s_prior_week');
+  $('s_daily_avg').value = gross > 0 ? fmt(gross/7) : '';
+  if(priorWeek > 0 && gross > 0) {
+    const chg = ((gross - priorWeek)/priorWeek*100).toFixed(1);
+    $('s_wow').value = (chg >= 0 ? '+' : '') + chg + '%';
+  }
+  if(covers > 0 && gross > 0) $('s_avg_check').value = fmt(gross/covers);
+  calcMCA();
+  calcLabor();
+}
+
+function calcCash() {
+  const net = val('c_checking') + val('c_savings') + val('c_petty') - val('c_outstanding');
+  const total = net + val('c_cc_pending');
+  $('c_net').value = fmt(net);
+  $('c_total').value = fmt(total);
+}
+
+function calcMCA() {
+  const bal = val('m_balance');
+  const daily = val('m_daily');
+  const gross = val('s_gross');
+  if(daily > 0) {
+    $('m_days').value = Math.ceil(bal/daily) + ' business days';
+    $('m_weekly_total').value = fmt(daily * 5);
+  }
+  if(gross > 0 && daily > 0) {
+    $('m_pct_sales').value = pct((daily*5)/gross*100);
+  }
+}
+
+function calcLabor() {
+  const cost = val('l_cost');
+  const gross = val('s_gross');
+  const settings = DB.get('settings') || {};
+  const target = parseFloat(settings.labor_target || 30);
+  if(gross > 0 && cost > 0) {
+    const p = cost/gross*100;
+    $('l_pct').value = pct(p);
+    if(p <= target) {
+      $('l_status').value = '✅ Within Target';
+      $('l_status').style.color = 'var(--green)';
+    } else if(p <= target + 4) {
+      $('l_status').value = '⚠️ Above Target';
+      $('l_status').style.color = 'var(--yellow)';
+    } else {
+      $('l_status').value = '🔴 Critical — Exceeds Target';
+      $('l_status').style.color = 'var(--red)';
+    }
+  }
+}
+
+function calcFnB() {
+  const fbeg = val('f_beg'), fpurch = val('f_purch'), fend = val('f_end');
+  const fcogs = fbeg + fpurch - fend;
+  $('f_cogs').value = fmt(fcogs);
+  const gross = val('s_gross');
+  const settings = DB.get('settings') || {};
+  const ftarget = parseFloat(settings.food_target || 32);
+  const ltarget = parseFloat(settings.liquor_target || 22);
+  if(gross > 0) {
+    const fpct = fcogs/gross*100;
+    $('f_pct').value = pct(fpct);
+    $('f_status').value = fpct <= ftarget ? '✅ Within Target' : '🔴 Over Target';
+    $('f_status').style.color = fpct <= ftarget ? 'var(--green)' : 'var(--red)';
+  }
+  const lbeg = val('lq_beg'), lpurch = val('lq_purch'), lend = val('lq_end');
+  const lcogs = lbeg + lpurch - lend;
+  $('lq_cogs').value = fmt(lcogs);
+  const bev = val('s_bev') || gross * 0.4;
+  if(bev > 0) {
+    const lpct = lcogs/bev*100;
+    $('lq_pct').value = pct(lpct);
+  }
+}
+
+// ─── AP TABLE ─────────────────────────────────────────────────────────────────
+function initAPTable() {
+  const tbody = $('apTable');
+  if(!tbody.children.length) addAPRow();
+}
+
+function addAPRow() {
+  const tbody = $('apTable');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="text" placeholder="Vendor name"></td>
+    <td><input type="text" placeholder="INV-001"></td>
+    <td><input type="number" step="0.01" placeholder="0.00" oninput="calcAP()" style="width:110px"></td>
+    <td><input type="date"></td>
+    <td><select onchange="calcAP()">
+      <option value="current">Current</option>
+      <option value="due_soon">Due Soon</option>
+      <option value="past_due">Past Due</option>
+      <option value="paid">Paid</option>
+    </select></td>
+    <td><select>
+      <option value="P1">P1 — Critical</option>
+      <option value="P2">P2 — Important</option>
+      <option value="P3" selected>P3 — Standard</option>
+      <option value="P4">P4 — Low</option>
+    </select></td>
+    <td class="no-print"><button type="button" class="btn btn-danger btn-sm" onclick="this.closest('tr').remove();calcAP()">×</button></td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function calcAP() {
+  let total = 0, pastDue = 0, pdCount = 0;
+  $('apTable').querySelectorAll('tr').forEach(tr => {
+    const amtInput = tr.querySelectorAll('input')[2];
+    const statusSel = tr.querySelectorAll('select')[0];
+    const amt = parseFloat(amtInput?.value || 0) || 0;
+    total += amt;
+    if(statusSel?.value === 'past_due') { pastDue += amt; pdCount++; }
+  });
+  $('ap_total').textContent = fmt(total);
+  $('ap_pastdue_count').textContent = pdCount + ' Past Due';
+  $('ap_total_display').value = fmt(total);
+  $('ap_pastdue_display').value = fmt(pastDue);
+}
+
+// ─── ACTION ITEMS ─────────────────────────────────────────────────────────────
+function initActionTable() {
+  if(!$('actionTable').children.length) addActionRow();
+}
+
+function addActionRow() {
+  const tbody = $('actionTable');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="text" placeholder="Describe action item" style="width:100%"></td>
+    <td><input type="text" placeholder="Name"></td>
+    <td><input type="date"></td>
+    <td><select>
+      <option value="open">Open</option>
+      <option value="in_progress">In Progress</option>
+      <option value="complete">Complete</option>
+    </select></td>
+    <td class="no-print"><button type="button" class="btn btn-danger btn-sm" onclick="this.closest('tr').remove()">×</button></td>
+  `;
+  tbody.appendChild(tr);
+}
+
+// ─── CASH FLOW ────────────────────────────────────────────────────────────────
+function initCashFlowTable() {
+  const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const tbody = $('cfTable');
+  if(!tbody) return;
+  const saved = DB.get('cashflow_days') || {};
+  tbody.innerHTML = '';
+  days.forEach((day, i) => {
+    const d = saved[day] || {};
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="cf-day">${day}</td>
+      <td><input type="number" step="0.01" placeholder="0.00" value="${d.expected||''}" oninput="calcCashFlow()" data-day="${day}" data-field="expected" style="width:110px"></td>
+      <td><input type="number" step="0.01" placeholder="0.00" value="${d.deposit||''}" oninput="calcCashFlow()" data-day="${day}" data-field="deposit" style="width:110px"></td>
+      <td><input type="number" step="0.01" placeholder="0.00" value="${d.mca||''}" oninput="calcCashFlow()" data-day="${day}" data-field="mca" style="width:100px"></td>
+      <td><input type="number" step="0.01" placeholder="0.00" value="${d.out||''}" oninput="calcCashFlow()" data-day="${day}" data-field="out" style="width:100px"></td>
+      <td id="cf_running_${i}" style="font-weight:600">—</td>
+      <td id="cf_status_${i}">—</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  // Load saved weekly values
+  const wk = DB.get('cashflow_week') || {};
+  if(wk.open) $('cf_open').value = wk.open;
+  if(wk.payroll) $('cf_payroll').value = wk.payroll;
+  if(wk.mca_weekly) $('cf_mca_weekly').value = wk.mca_weekly;
+  if(wk.rent) $('cf_rent').value = wk.rent;
+  if(wk.util) $('cf_util').value = wk.util;
+  if(wk.vendors) $('cf_vendors').value = wk.vendors;
+  if(wk.other) $('cf_other').value = wk.other;
+  if(wk.notes) $('cf_notes').value = wk.notes;
+  calcCashFlow();
+}
+
+function calcCashFlow() {
+  const minCash = parseFloat((DB.get('settings')||{}).min_cash || 5000);
+  let balance = val('cf_open');
+  let totExpected = 0, totDeposits = 0, totMCA = 0, totOut = 0;
+  const rows = $('cfTable').querySelectorAll('tr');
+  rows.forEach((tr, i) => {
+    const inputs = tr.querySelectorAll('input');
+    const exp = parseFloat(inputs[0]?.value||0)||0;
+    const dep = parseFloat(inputs[1]?.value||0)||0;
+    const mca = parseFloat(inputs[2]?.value||0)||0;
+    const out = parseFloat(inputs[3]?.value||0)||0;
+    balance = balance + dep - mca - out;
+    totExpected += exp; totDeposits += dep; totMCA += mca; totOut += out;
+    const runEl = $('cf_running_'+i);
+    const stEl = $('cf_status_'+i);
+    if(runEl) { runEl.textContent = fmt(balance); runEl.className = balance < minCash ? 'cf-neg' : 'cf-pos'; }
+    if(stEl) {
+      if(balance < 0) { stEl.innerHTML = '<span class="badge badge-red">CRITICAL</span>'; }
+      else if(balance < minCash) { stEl.innerHTML = '<span class="badge badge-yellow">Low Cash</span>'; }
+      else { stEl.innerHTML = '<span class="badge badge-green">OK</span>'; }
+    }
+  });
+  $('cf_total_expected').textContent = fmt(totExpected);
+  $('cf_total_deposits').textContent = fmt(totDeposits);
+  $('cf_total_mca').textContent = fmt(totMCA);
+  $('cf_total_out').textContent = fmt(totOut);
+  $('cf_end_balance').textContent = fmt(balance);
+
+  const obligations = val('cf_payroll') + val('cf_mca_weekly') + val('cf_rent') + val('cf_util') + val('cf_vendors') + val('cf_other');
+  $('cf_total_obligations').value = fmt(obligations);
+  const projEnd = val('cf_open') + totDeposits - obligations;
+  $('cf_projected_end').value = fmt(projEnd);
+  const cushion = projEnd - minCash;
+  $('cf_cushion').value = fmt(cushion);
+  const riskEl = $('cf_risk');
+  if(cushion < 0) { riskEl.value = '🔴 HIGH RISK — Shortfall Projected'; riskEl.style.color = 'var(--red)'; }
+  else if(cushion < minCash) { riskEl.value = '⚠️ MEDIUM RISK — Low Cushion'; riskEl.style.color = 'var(--yellow)'; }
+  else { riskEl.value = '✅ LOW RISK — Adequate Cushion'; riskEl.style.color = 'var(--green)'; }
+}
+
+function saveCashFlow() {
+  const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const dayData = {};
+  const rows = $('cfTable').querySelectorAll('tr');
+  rows.forEach((tr, i) => {
+    const inputs = tr.querySelectorAll('input');
+    dayData[days[i]] = {
+      expected: inputs[0]?.value, deposit: inputs[1]?.value,
+      mca: inputs[2]?.value, out: inputs[3]?.value
+    };
+  });
+  DB.set('cashflow_days', dayData);
+  DB.set('cashflow_week', {
+    open: $('cf_open').value, payroll: $('cf_payroll').value,
+    mca_weekly: $('cf_mca_weekly').value, rent: $('cf_rent').value,
+    util: $('cf_util').value, vendors: $('cf_vendors').value,
+    other: $('cf_other').value, notes: $('cf_notes').value
+  });
+  showToast('Cash flow data saved.', 'green');
+}
+
+// ─── MCA FULL CALC ────────────────────────────────────────────────────────────
+function calcMCAFull() {
+  const original = val('mca_original');
+  const payback = val('mca_payback');
+  const current = val('mca_current_balance');
+  const daily = val('mca_daily_debit');
+  const factor = val('mca_factor');
+  const targetSales = val('mca_target_sales');
+
+  if(original > 0 && payback > 0) {
+    const paid = payback - current;
+    $('mca_paid').value = fmt(paid);
+    const pctDone = (paid/payback*100).toFixed(1);
+    $('mca_pct_done').value = pctDone + '% paid';
+    const bar = $('mca_progress_bar');
+    bar.style.width = Math.min(100, pctDone) + '%';
+    bar.className = 'progress-fill' + (pctDone < 50 ? ' danger' : '');
+    $('mca_progress_label').textContent = pctDone + '% complete';
+  }
+  if(daily > 0) {
+    const daysLeft = Math.ceil(current/daily);
+    $('mca_days_left').value = daysLeft + ' business days';
+    const payoffDate = addBusinessDays(new Date(), daysLeft);
+    $('mca_payoff_date').value = payoffDate.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    $('mca_weekly_cost').value = fmt(daily*5);
+    $('mca_monthly_cost').value = fmt(daily*21.7);
+    if(targetSales > 0) $('mca_pct_weekly').value = pct(daily*5/targetSales*100);
+  }
+  if(original > 0 && factor > 0) {
+    const termDays = Math.ceil(payback/daily) || 365;
+    const apr = ((factor - 1) * (365/termDays) * 100).toFixed(0);
+    $('mca_apr').value = apr + '% (est. APR)';
+  }
+}
+
+function addBusinessDays(date, days) {
+  let d = new Date(date);
+  let added = 0;
+  while(added < days) {
+    d.setDate(d.getDate()+1);
+    if(d.getDay() !== 0 && d.getDay() !== 6) added++;
+  }
+  return d;
+}
+
+function saveMCASettings() {
+  const data = {
+    provider: str('mca_provider'), account: str('mca_account'),
+    original: val('mca_original'), payback: val('mca_payback'),
+    factor: val('mca_factor'), start: str('mca_start'),
+    daily_debit: val('mca_daily_debit'), current_balance: val('mca_current_balance'),
+    debit_day: str('mca_debit_day'), target_sales: val('mca_target_sales'),
+    notes: str('mca_notes')
+  };
+  DB.set('mca_settings', data);
+  showToast('MCA data saved.', 'green');
+}
+
+function loadMCASettings() {
+  const d = DB.get('mca_settings');
+  if(!d) return;
+  const fields = ['provider','account','factor','start','debit_day','notes'];
+  fields.forEach(f => { if($('mca_'+f) && d[f]) $('mca_'+f).value = d[f]; });
+  const numFields = ['original','payback','daily_debit','current_balance','target_sales'];
+  numFields.forEach(f => { if($('mca_'+f) && d[f]) $('mca_'+f).value = d[f]; });
+  calcMCAFull();
+}
+
+// ─── VENDORS ──────────────────────────────────────────────────────────────────
+function loadVendors() {
+  const vendors = DB.get('vendors') || [];
+  const tbody = $('vendorMasterTable');
+  tbody.innerHTML = '';
+  if(!vendors.length) { addVendorMaster(); return; }
+  vendors.forEach(v => addVendorMasterRow(v));
+}
+
+function addVendorMaster() {
+  addVendorMasterRow({});
+}
+
+function addVendorMasterRow(v) {
+  const tbody = $('vendorMasterTable');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="text" placeholder="Vendor Name" value="${v.name||''}"></td>
+    <td><select>
+      <option ${v.cat==='food'?'selected':''}>Food</option>
+      <option ${v.cat==='alcohol'?'selected':''}>Alcohol</option>
+      <option ${v.cat==='utility'?'selected':''}>Utility</option>
+      <option ${v.cat==='supplies'?'selected':''}>Supplies</option>
+      <option ${v.cat==='other'?'selected':''}>Other</option>
+    </select></td>
+    <td><input type="text" placeholder="Contact / Phone" value="${v.contact||''}"></td>
+    <td><input type="text" placeholder="Net 30" value="${v.terms||''}"></td>
+    <td><input type="number" step="0.01" placeholder="0.00" value="${v.avg_weekly||''}"></td>
+    <td><input type="number" step="0.01" placeholder="0.00" value="${v.balance||''}"></td>
+    <td><select>
+      <option value="current" ${v.status==='current'?'selected':''}>Current</option>
+      <option value="past_due" ${v.status==='past_due'?'selected':''}>Past Due</option>
+      <option value="on_hold" ${v.status==='on_hold'?'selected':''}>On Hold</option>
+    </select></td>
+    <td><select>
+      <option value="P1" ${v.priority==='P1'?'selected':''}>P1 — Critical</option>
+      <option value="P2" ${v.priority==='P2'?'selected':''}>P2 — Important</option>
+      <option value="P3" ${v.priority==='P3'?'selected':''}>P3 — Standard</option>
+      <option value="P4" ${v.priority==='P4'?'selected':''}>P4 — Low</option>
+    </select></td>
+    <td class="no-print"><button type="button" class="btn btn-danger btn-sm" onclick="this.closest('tr').remove()">×</button></td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function saveVendors() {
+  const rows = $('vendorMasterTable').querySelectorAll('tr');
+  const vendors = [];
+  rows.forEach(tr => {
+    const inputs = tr.querySelectorAll('input');
+    const selects = tr.querySelectorAll('select');
+    vendors.push({
+      name: inputs[0]?.value, contact: inputs[1]?.value,
+      terms: inputs[2]?.value, avg_weekly: inputs[3]?.value,
+      balance: inputs[4]?.value, cat: selects[0]?.value,
+      status: selects[1]?.value, priority: selects[2]?.value
+    });
+  });
+  DB.set('vendors', vendors);
+  showToast('Vendors saved.', 'green');
+}
+
+// ─── SETTINGS ─────────────────────────────────────────────────────────────────
+function loadSettings() {
+  const s = DB.get('settings') || {};
+  if(s.name) $('set_name').value = s.name;
+  if(s.owner) $('set_owner').value = s.owner;
+  if(s.address) $('set_address').value = s.address;
+  if(s.phone) $('set_phone').value = s.phone;
+  if(s.email) $('set_email').value = s.email;
+  if(s.labor_target) $('set_labor_target').value = s.labor_target;
+  if(s.food_target) $('set_food_target').value = s.food_target;
+  if(s.liquor_target) $('set_liquor_target').value = s.liquor_target;
+  if(s.min_cash) $('set_min_cash').value = s.min_cash;
+  if(s.sales_target) $('set_sales_target').value = s.sales_target;
+  if(s.rent) $('set_rent').value = s.rent;
+}
+
+function saveSettings() {
+  const s = {
+    name: str('set_name'), owner: str('set_owner'),
+    address: str('set_address'), phone: str('set_phone'), email: str('set_email'),
+    labor_target: val('set_labor_target'), food_target: val('set_food_target'),
+    liquor_target: val('set_liquor_target'), min_cash: val('set_min_cash'),
+    sales_target: val('set_sales_target'), rent: val('set_rent')
+  };
+  DB.set('settings', s);
+  showToast('Settings saved.', 'green');
+}
+
+// ─── SAVE REPORT ──────────────────────────────────────────────────────────────
+function collectReport() {
+  const apRows = [];
+  $('apTable').querySelectorAll('tr').forEach(tr => {
+    const inputs = tr.querySelectorAll('input');
+    const selects = tr.querySelectorAll('select');
+    if(inputs[0]?.value) apRows.push({
+      vendor: inputs[0].value, invoice: inputs[1]?.value,
+      amount: inputs[2]?.value, dueDate: inputs[3]?.value,
+      status: selects[0]?.value, priority: selects[1]?.value
+    });
+  });
+  const actionRows = [];
+  $('actionTable').querySelectorAll('tr').forEach(tr => {
+    const inputs = tr.querySelectorAll('input');
+    const sel = tr.querySelector('select');
+    if(inputs[0]?.value) actionRows.push({
+      item: inputs[0].value, assignee: inputs[1]?.value,
+      deadline: inputs[2]?.value, status: sel?.value
+    });
+  });
+  return {
+    id: Date.now(),
+    submittedAt: new Date().toISOString(),
+    manager: str('r_manager'),
+    week: str('r_week'),
+    ontime: str('r_ontime'),
+    sales: {
+      gross: val('s_gross'), food: val('s_food'), bev: val('s_bev'),
+      event: val('s_event'), priorWeek: val('s_prior_week'),
+      priorYear: val('s_prior_year'), covers: val('s_covers'),
+      notes: str('s_notes')
+    },
+    cash: {
+      checking: val('c_checking'), savings: val('c_savings'),
+      petty: val('c_petty'), deposits: val('c_deposits'),
+      outstanding: val('c_outstanding'), ccPending: val('c_cc_pending'),
+      bankAttached: str('c_bank_attached'), notes: str('c_notes')
+    },
+    mca: {
+      provider: str('m_provider'), original: val('m_original'),
+      balance: val('m_balance'), daily: val('m_daily'),
+      factor: val('m_factor'), attached: str('m_attached'),
+      issues: str('m_issues'), notes: str('m_notes')
+    },
+    labor: {
+      hours: val('l_hours'), cost: val('l_cost'),
+      mgmt: val('l_mgmt'), foh: val('l_foh'),
+      boh: val('l_boh'), bar: val('l_bar'),
+      otHours: val('l_ot_hours'), otCost: val('l_ot_cost'),
+      period: str('l_period'), nextPayroll: str('l_next_payroll'),
+      nextAmount: val('l_next_amount'), attached: str('l_attached'),
+      notes: str('l_notes')
+    },
+    fnb: {
+      fBeg: val('f_beg'), fPurch: val('f_purch'), fEnd: val('f_end'),
+      lqBeg: val('lq_beg'), lqPurch: val('lq_purch'), lqEnd: val('lq_end'),
+      beerPct: val('beer_pct'), winePct: val('wine_pct'),
+      attached: str('f_attached'), notes: str('f_notes')
+    },
+    ap: apRows,
+    operations: {
+      equipment: str('op_equipment'), staffing: str('op_staffing'),
+      reviewScore: val('op_review_score'), reviewCount: val('op_review_count'),
+      feedback: str('op_feedback'), events: str('op_events'),
+      other: str('op_other'), actions: actionRows
+    },
+    attachments: {
+      pos: str('att_pos'), labor: str('att_labor'), bank: str('att_bank'),
+      mca: str('att_mca'), vendor: str('att_vendor'), inv: str('att_inv')
+    }
+  };
+}
+
+function saveReport() {
+  const r = collectReport();
+  if(!r.manager) { showToast('Manager name is required.', 'red'); return; }
+  if(!r.week) { showToast('Report week is required.', 'red'); return; }
+  if(!r.sales.gross) { showToast('Total gross sales is required.', 'red'); return; }
+
+  const reports = DB.get('reports') || [];
+  const existIdx = reports.findIndex(x => x.week === r.week);
+  if(existIdx >= 0) {
+    if(!confirm('A report for this week already exists. Overwrite it?')) return;
+    reports[existIdx] = r;
+  } else {
+    reports.push(r);
+  }
+  DB.set('reports', reports);
+  DB.set('draft', null);
+  showToast('✅ Report submitted successfully for week ' + r.week, 'green');
+  loadDashboard();
+}
+
+function saveDraft() {
+  DB.set('draft', collectReport());
+  showToast('Draft saved.', 'blue');
+}
+
+function loadDraft() {
+  const d = DB.get('draft');
+  if(!d) return;
+  // Restore basic fields
+  if(d.manager && $('r_manager')) $('r_manager').value = d.manager;
+  if(d.week && $('r_week')) $('r_week').value = d.week;
+}
+
+function clearForm() {
+  if(!confirm('Clear all form data? Your draft will be lost.')) return;
+  document.getElementById('weeklyForm').reset();
+  $('apTable').innerHTML = '';
+  $('actionTable').innerHTML = '';
+  addAPRow(); addActionRow();
+}
+
+// ─── DASHBOARD ────────────────────────────────────────────────────────────────
+function loadDashboard() {
+  const reports = DB.get('reports') || [];
+  const settings = DB.get('settings') || {};
+  const mca = DB.get('mca_settings') || {};
+
+  const alerts = $('dashAlerts');
+  alerts.innerHTML = '';
+
+  if(!reports.length) {
+    alerts.innerHTML = '<div class="alert alert-yellow"><span>📋</span><span>No reports submitted yet. Go to <strong>Weekly Report</strong> to submit your first Monday Morning Executive Report.</span></div>';
+    return;
+  }
+
+  const latest = reports[reports.length - 1];
+  const r = latest;
+  const gross = r.sales.gross;
+  const laborPct = gross > 0 ? r.labor.cost/gross*100 : 0;
+  const fcogs = r.fnb.fBeg + r.fnb.fPurch - r.fnb.fEnd;
+  const foodPct = gross > 0 ? fcogs/gross*100 : 0;
+  const lcogs = r.fnb.lqBeg + r.fnb.lqPurch - r.fnb.lqEnd;
+  const bev = r.sales.bev || gross * 0.4;
+  const liqPct = bev > 0 ? lcogs/bev*100 : 0;
+
+  // KPIs
+  $('kpi-sales').textContent = fmt(gross);
+  if(r.sales.priorWeek > 0) {
+    const chg = ((gross - r.sales.priorWeek)/r.sales.priorWeek*100).toFixed(1);
+    const el = $('kpi-sales-trend');
+    el.textContent = (chg>=0?'▲ +':'▼ ') + chg + '% vs prior week';
+    el.className = 'kpi-trend ' + (chg>=0?'up':'down');
+  }
+
+  const cashNet = r.cash.checking + r.cash.savings + r.cash.petty - r.cash.outstanding;
+  $('kpi-cash').textContent = fmt(cashNet);
+
+  const lt = parseFloat(settings.labor_target||30);
+  $('kpi-labor').textContent = pct(laborPct);
+  const lStatus = $('kpi-labor-status');
+  lStatus.textContent = laborPct <= lt ? '✅ On Target' : '🔴 Over Target';
+  lStatus.className = 'kpi-trend ' + (laborPct <= lt ? 'up' : 'down');
+
+  const ft = parseFloat(settings.food_target||32);
+  $('kpi-food').textContent = pct(foodPct);
+  const fStatus = $('kpi-food-status');
+  fStatus.textContent = foodPct <= ft ? '✅ On Target' : '🔴 Over Target';
+  fStatus.className = 'kpi-trend ' + (foodPct <= ft ? 'up' : 'down');
+
+  const lt2 = parseFloat(settings.liquor_target||22);
+  $('kpi-liquor').textContent = pct(liqPct);
+  const lqStatus = $('kpi-liquor-status');
+  lqStatus.textContent = liqPct <= lt2 ? '✅ On Target' : '🔴 Over Target';
+  lqStatus.className = 'kpi-trend ' + (liqPct <= lt2 ? 'up' : 'down');
+
+  if(mca.current_balance) {
+    $('kpi-mca').textContent = fmt(mca.current_balance);
+    $('kpi-mca-sub').textContent = 'Daily: ' + fmt(mca.daily_debit);
+  } else if(r.mca.balance) {
+    $('kpi-mca').textContent = fmt(r.mca.balance);
+    $('kpi-mca-sub').textContent = 'Daily: ' + fmt(r.mca.daily);
+  }
+
+  // AP
+  let totalAP = 0, pastDue = 0;
+  r.ap.forEach(v => {
+    totalAP += parseFloat(v.amount||0);
+    if(v.status === 'past_due') pastDue += parseFloat(v.amount||0);
+  });
+  $('kpi-ap').textContent = fmt(totalAP);
+  $('kpi-pastdue').textContent = fmt(pastDue);
+
+  if(r.operations.reviewScore) $('kpi-review').textContent = r.operations.reviewScore + ' ★';
+
+  // Alerts
+  const alertsHtml = [];
+  if(laborPct > lt + 4) alertsHtml.push('<div class="alert alert-red">🔴 <strong>Labor Alert:</strong> Labor % is ' + pct(laborPct) + ' — significantly over target of ' + lt + '%. Immediate scheduling review required.</div>');
+  if(foodPct > ft + 5) alertsHtml.push('<div class="alert alert-red">🔴 <strong>Food Cost Alert:</strong> Food cost % is ' + pct(foodPct) + ' — over target of ' + ft + '%. Check inventory and waste.</div>');
+  if(pastDue > 0) alertsHtml.push('<div class="alert alert-yellow">⚠️ <strong>Past Due Vendors:</strong> ' + fmt(pastDue) + ' in past-due balances. Address immediately to avoid supply cutoff.</div>');
+  const minCash = parseFloat(settings.min_cash || 5000);
+  if(cashNet < minCash) alertsHtml.push('<div class="alert alert-red">🔴 <strong>Cash Alert:</strong> Net cash (' + fmt(cashNet) + ') is below minimum cushion of ' + fmt(minCash) + '. Monitor closely.</div>');
+  if(alertsHtml.length) alerts.innerHTML = alertsHtml.join('');
+
+  // Action items
+  const openActions = [];
+  r.operations.actions.forEach(a => {
+    if(a.status !== 'complete' && a.item) openActions.push(a);
+  });
+  const actionEl = $('openActions');
+  if(openActions.length) {
+    actionEl.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Action Item</th><th>Assigned To</th><th>Deadline</th><th>Status</th></tr></thead><tbody>' +
+      openActions.map(a => `<tr><td>${a.item}</td><td>${a.assignee||'—'}</td><td>${a.deadline||'—'}</td><td><span class="badge ${a.status==='in_progress'?'badge-yellow':'badge-red'}">${a.status}</span></td></tr>`).join('') +
+      '</tbody></table></div>';
+  } else {
+    actionEl.innerHTML = '<p style="color:var(--muted)">No open action items.</p>';
+  }
+
+  // Charts
+  renderSalesChart(reports);
+  renderCostChart(latest);
+  renderMCAChart(mca, r.mca);
+}
+
+function renderSalesChart(reports) {
+  const ctx = $('salesChart');
+  if(!ctx) return;
+  if(salesChartInst) salesChartInst.destroy();
+  const labels = reports.slice(-8).map(r => r.week);
+  const data = reports.slice(-8).map(r => r.sales.gross);
+  salesChartInst = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Gross Sales',
+        data,
+        borderColor: '#f59e0b',
+        backgroundColor: 'rgba(245,158,11,.1)',
+        tension: .4,
+        fill: true,
+        pointBackgroundColor: '#f59e0b'
+      }]
+    },
+    options: {
+      responsive:true, plugins:{legend:{display:false}},
+      scales:{
+        x:{ticks:{color:'#94a3b8'},grid:{color:'#1e293b'}},
+        y:{ticks:{color:'#94a3b8',callback:v=>'$'+v.toLocaleString()},grid:{color:'#1e293b'}}
+      }
+    }
+  });
+}
+
+function renderCostChart(r) {
+  const ctx = $('costChart');
+  if(!ctx) return;
+  if(costChartInst) costChartInst.destroy();
+  const gross = r.sales.gross;
+  const laborPct = gross > 0 ? r.labor.cost/gross*100 : 0;
+  const fcogs = r.fnb.fBeg + r.fnb.fPurch - r.fnb.fEnd;
+  const foodPct = gross > 0 ? fcogs/gross*100 : 0;
+  const lcogs = r.fnb.lqBeg + r.fnb.lqPurch - r.fnb.lqEnd;
+  const bev = r.sales.bev || gross * 0.4;
+  const liqPct = bev > 0 ? lcogs/bev*100 : 0;
+  costChartInst = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Labor','Food Cost','Liquor Cost'],
+      datasets: [
+        { label: 'Actual %', data: [laborPct.toFixed(1), foodPct.toFixed(1), liqPct.toFixed(1)], backgroundColor: ['#3b82f6','#10b981','#f59e0b'] },
+        { label: 'Target %', data: [30,32,22], backgroundColor: 'rgba(255,255,255,.1)', borderColor: 'rgba(255,255,255,.3)', borderWidth:1 }
+      ]
+    },
+    options: {
+      responsive:true,
+      scales:{
+        x:{ticks:{color:'#94a3b8'},grid:{color:'#1e293b'}},
+        y:{ticks:{color:'#94a3b8',callback:v=>v+'%'},grid:{color:'#1e293b'},max:50}
+      },
+      plugins:{legend:{labels:{color:'#94a3b8'}}}
+    }
+  });
+}
+
+function renderMCAChart(mca, reportMCA) {
+  const ctx = $('mcaChart');
+  if(!ctx) return;
+  if(mcaChartInst) mcaChartInst.destroy();
+  const original = mca.payback || reportMCA.original || 1;
+  const current = mca.current_balance || reportMCA.balance || 0;
+  const paid = original - current;
+  mcaChartInst = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Paid Off','Remaining'],
+      datasets: [{ data: [Math.max(0,paid), Math.max(0,current)], backgroundColor: ['#10b981','#ef4444'], borderWidth:0 }]
+    },
+    options: {
+      responsive:true, cutout:'70%',
+      plugins:{
+        legend:{labels:{color:'#94a3b8'}},
+        tooltip:{callbacks:{label:ctx=>ctx.label+': '+fmt(ctx.raw)}}
+      }
+    }
+  });
+}
+
+function renderLaborChart() {
+  const reports = DB.get('reports') || [];
+  const ctx = $('laborChart');
+  if(!ctx || !reports.length) return;
+  if(laborChartInst) laborChartInst.destroy();
+  const labels = reports.slice(-8).map(r => r.week);
+  const laborData = reports.slice(-8).map(r => r.sales.gross > 0 ? (r.labor.cost/r.sales.gross*100).toFixed(1) : 0);
+  laborChartInst = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Labor %', data: laborData, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,.1)', fill:true, tension:.4 },
+        { label: 'Target 30%', data: labels.map(()=>30), borderColor: '#10b981', borderDash:[5,5], pointRadius:0 }
+      ]
+    },
+    options: {
+      responsive:true,
+      scales:{
+        x:{ticks:{color:'#94a3b8'},grid:{color:'#1e293b'}},
+        y:{ticks:{color:'#94a3b8',callback:v=>v+'%'},grid:{color:'#1e293b'},min:0,max:50}
+      },
+      plugins:{legend:{labels:{color:'#94a3b8'}}}
+    }
+  });
+}
+
+// ─── HISTORY ──────────────────────────────────────────────────────────────────
+function loadHistory() {
+  const reports = DB.get('reports') || [];
+  const el = $('historyList');
+  if(!reports.length) { el.innerHTML = '<p style="color:var(--muted)">No reports submitted yet.</p>'; return; }
+  el.innerHTML = reports.slice().reverse().map(r => {
+    const gross = r.sales.gross;
+    const laborPct = gross > 0 ? (r.labor.cost/gross*100).toFixed(1) : '—';
+    const fcogs = r.fnb.fBeg + r.fnb.fPurch - r.fnb.fEnd;
+    const foodPct = gross > 0 ? (fcogs/gross*100).toFixed(1) : '—';
+    return `<div class="history-item" onclick="viewReport('${r.id}')">
+      <div>
+        <div style="font-weight:700;color:var(--text)">${r.week} — ${r.manager}</div>
+        <div class="history-meta">Submitted: ${new Date(r.submittedAt).toLocaleString()} · Sales: ${fmt(gross)} · Labor: ${laborPct}% · Food: ${foodPct}%</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="badge ${r.ontime==='yes'?'badge-green':'badge-red'}">${r.ontime==='yes'?'On Time':'Late'}</span>
+        <button class="btn btn-danger btn-sm no-print" onclick="deleteReport('${r.id}',event)">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function viewReport(id) {
+  const reports = DB.get('reports') || [];
+  const r = reports.find(x => String(x.id) === String(id));
+  if(!r) return;
+  const fcogs = r.fnb.fBeg + r.fnb.fPurch - r.fnb.fEnd;
+  const gross = r.sales.gross;
+  const lcogs = r.fnb.lqBeg + r.fnb.lqPurch - r.fnb.lqEnd;
+  const bev = r.sales.bev || gross * 0.4;
+  $('reportModalContent').innerHTML = `
+    <h3 style="color:var(--gold);margin-bottom:20px">Week ${r.week} — ${r.manager}</h3>
+    <div class="kpi-grid" style="margin-bottom:20px">
+      <div class="kpi"><div class="kpi-label">Gross Sales</div><div class="kpi-value">${fmt(gross)}</div></div>
+      <div class="kpi"><div class="kpi-label">Cash (Checking)</div><div class="kpi-value">${fmt(r.cash.checking)}</div></div>
+      <div class="kpi"><div class="kpi-label">Labor %</div><div class="kpi-value">${gross>0?pct(r.labor.cost/gross*100):'—'}</div></div>
+      <div class="kpi"><div class="kpi-label">Food Cost %</div><div class="kpi-value">${gross>0?pct(fcogs/gross*100):'—'}</div></div>
+      <div class="kpi"><div class="kpi-label">Liquor Cost %</div><div class="kpi-value">${bev>0?pct(lcogs/bev*100):'—'}</div></div>
+      <div class="kpi"><div class="kpi-label">MCA Balance</div><div class="kpi-value">${fmt(r.mca.balance)}</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div><strong style="color:var(--muted)">Sales Notes</strong><p style="margin-top:6px;font-size:13px">${r.sales.notes||'—'}</p></div>
+      <div><strong style="color:var(--muted)">Cash Notes</strong><p style="margin-top:6px;font-size:13px">${r.cash.notes||'—'}</p></div>
+      <div><strong style="color:var(--muted)">Labor Notes</strong><p style="margin-top:6px;font-size:13px">${r.labor.notes||'—'}</p></div>
+      <div><strong style="color:var(--muted)">F&B Notes</strong><p style="margin-top:6px;font-size:13px">${r.fnb.notes||'—'}</p></div>
+      <div style="grid-column:1/-1"><strong style="color:var(--muted)">Operations</strong><p style="margin-top:6px;font-size:13px">${r.operations.equipment||'—'}</p></div>
+    </div>
+    ${r.operations.actions && r.operations.actions.length ? `
+    <div style="margin-top:20px">
+      <strong style="color:var(--muted)">Action Items</strong>
+      <div class="table-wrap" style="margin-top:8px"><table>
+        <thead><tr><th>Item</th><th>Assigned</th><th>Deadline</th><th>Status</th></tr></thead>
+        <tbody>${r.operations.actions.map(a=>`<tr><td>${a.item}</td><td>${a.assignee||'—'}</td><td>${a.deadline||'—'}</td><td>${a.status}</td></tr>`).join('')}</tbody>
+      </table></div>
+    </div>` : ''}
+  `;
+  $('reportModal').style.display = 'block';
+}
+
+function closeModal() { $('reportModal').style.display = 'none'; }
+window.addEventListener('click', e => { if(e.target === $('reportModal')) closeModal(); });
+
+function deleteReport(id, e) {
+  e.stopPropagation();
+  if(!confirm('Delete this report?')) return;
+  const reports = (DB.get('reports')||[]).filter(r => String(r.id) !== String(id));
+  DB.set('reports', reports);
+  loadHistory();
+}
+
+function confirmClearHistory() {
+  if(!confirm('Delete ALL report history? This cannot be undone.')) return;
+  DB.set('reports', []);
+  loadHistory();
+}
+
+// ─── UTILS ────────────────────────────────────────────────────────────────────
+function showToast(msg, color) {
+  const el = $('submitMsg') || document.body;
+  const colors = { green:'var(--green)', red:'var(--red)', blue:'var(--blue)', yellow:'var(--yellow)' };
+  if($('submitMsg')) {
+    $('submitMsg').innerHTML = `<div style="color:${colors[color]||colors.green};font-weight:600;font-size:14px">${msg}</div>`;
+    setTimeout(() => { if($('submitMsg')) $('submitMsg').innerHTML = ''; }, 5000);
+  }
+}
+
+function printReport() { window.print(); }
+
+// ─── BOOT ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
