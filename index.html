@@ -1143,6 +1143,7 @@ async function init() {
   initActionTable();
   await loadSettings();
   await Promise.all([loadDashboard(), loadDraft()]);
+  checkLocalMigration();
 }
 
 function getWeekNumber(d) {
@@ -1939,6 +1940,56 @@ async function confirmClearHistory() {
   const reports = await api('/api/reports') || [];
   await Promise.all(reports.map(r => api('/api/reports/' + r.id, { method:'DELETE' })));
   await loadHistory();
+}
+
+// ─── LOCAL DATA MIGRATION ─────────────────────────────────────────────────────
+function checkLocalMigration() {
+  const hasData = localStorage.getItem('jmt_reports') || localStorage.getItem('jmt_mca_settings') || localStorage.getItem('jmt_cashflow_days');
+  if(!hasData) return;
+  if(document.getElementById('migrate-banner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'migrate-banner';
+  banner.style.cssText = 'background:rgba(59,130,246,.12);border:1px solid #3b82f6;border-radius:8px;padding:12px 16px;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px';
+  banner.innerHTML = `<div style="color:#93c5fd"><strong style="color:#60a5fa">📦 Saved data found in this browser.</strong> The manager entered data today — import it to the cloud now so it's accessible from anywhere.</div><button id="migrate-btn" class="btn btn-primary btn-sm" onclick="migrateLocalData()" style="white-space:nowrap">Import Now</button>`;
+  const main = document.querySelector('.main');
+  if(main) main.insertBefore(banner, main.firstChild);
+}
+
+async function migrateLocalData() {
+  const btn = document.getElementById('migrate-btn');
+  if(btn) { btn.disabled = true; btn.textContent = 'Importing…'; }
+  try {
+    // Reports
+    const reports = JSON.parse(localStorage.getItem('jmt_reports') || '[]');
+    for(const r of reports) {
+      await api('/api/reports', { method:'POST', body: JSON.stringify({ week: r.week, manager_name: r.manager, data: r }) });
+    }
+    // Cash flow
+    const days_data = JSON.parse(localStorage.getItem('jmt_cashflow_days') || '{}');
+    const week_data = JSON.parse(localStorage.getItem('jmt_cashflow_week') || '{}');
+    if(Object.keys(days_data).length || Object.keys(week_data).length) {
+      await api('/api/cashflow', { method:'PUT', body: JSON.stringify({ week: week_data.week || '', week_data, days_data }) });
+    }
+    // MCA
+    const mca = JSON.parse(localStorage.getItem('jmt_mca_settings') || 'null');
+    if(mca) await api('/api/mca', { method:'PUT', body: JSON.stringify(mca) });
+    // Vendors
+    const vendors = JSON.parse(localStorage.getItem('jmt_vendors') || 'null');
+    if(vendors) await api('/api/vendors', { method:'PUT', body: JSON.stringify(vendors) });
+    // Settings
+    const settings = JSON.parse(localStorage.getItem('jmt_settings') || 'null');
+    if(settings) await api('/api/settings', { method:'PUT', body: JSON.stringify(settings) });
+    // Draft
+    const draft = JSON.parse(localStorage.getItem('jmt_draft') || 'null');
+    if(draft) await api('/api/draft', { method:'PUT', body: JSON.stringify(draft) });
+
+    document.getElementById('migrate-banner')?.remove();
+    showToast('✅ Data imported successfully!', 'green');
+    await loadDashboard();
+  } catch(e) {
+    showToast('Import failed — try again', 'red');
+    if(btn) { btn.disabled = false; btn.textContent = 'Import Now'; }
+  }
 }
 
 // ─── UTILS ────────────────────────────────────────────────────────────────────
