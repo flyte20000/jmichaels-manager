@@ -1,0 +1,8 @@
+name = "jmichaels-manager-api"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "jmichaels-manager-db"
+database_id = "4bc992d1-41a7-47ca-97ce-953379f0943d"

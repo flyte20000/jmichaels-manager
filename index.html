@@ -163,12 +163,32 @@ td select{padding:6px 8px;font-size:13px}
 </head>
 <body>
 
+<!-- AUTH -->
+<div id="auth-wrap" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:var(--bg)">
+  <h1 style="font-size:2rem;font-weight:700;color:var(--gold);margin-bottom:4px">J Michael's</h1>
+  <p style="font-size:11px;color:var(--muted);letter-spacing:.18em;text-transform:uppercase;margin-bottom:2rem">Manager Dashboard</p>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.75rem;width:100%;max-width:360px">
+    <h3 style="font-size:14px;font-weight:600;color:var(--gold);text-align:center;margin-bottom:1.25rem">Sign In</h3>
+    <div style="margin-bottom:.75rem"><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">Username</label>
+      <input id="au" type="text" placeholder="username" autocomplete="username" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:13px;outline:none;font-family:inherit"></div>
+    <div style="margin-bottom:1rem"><label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">Password</label>
+      <input id="ap" type="password" placeholder="password" autocomplete="current-password" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:13px;outline:none;font-family:inherit" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <button onclick="doLogin()" style="width:100%;background:var(--gold);color:#000;border:none;border-radius:6px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Sign In</button>
+    <div id="aerr" style="color:var(--red);font-size:11px;margin-top:.5rem;text-align:center;min-height:16px"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+
 <div class="header">
   <div class="header-left">
     <h1>J Michael's Tavern &amp; Grille</h1>
     <p><span class="status-dot"></span>Executive Management Report System</p>
   </div>
   <div class="header-right">
+    <span id="user-pill" style="font-size:12px;color:var(--muted)"></span>
+    <button class="btn btn-ghost btn-sm" onclick="doLogout()" id="logout-btn" style="display:none">Sign Out</button>
     <span class="week-badge" id="currentWeekBadge">Loading...</span>
     <button class="btn btn-primary" onclick="printReport()">Print / PDF</button>
   </div>
@@ -1022,13 +1042,71 @@ td select{padding:6px 8px;font-size:13px}
   </div>
 </div>
 
+</div><!-- /app -->
+
 <script>
-// ─── GLOBALS ──────────────────────────────────────────────────────────────────
-const DB = {
-  get: k => { try { return JSON.parse(localStorage.getItem('jmt_'+k)) } catch(e) { return null } },
-  set: (k,v) => localStorage.setItem('jmt_'+k, JSON.stringify(v)),
-  push: (k,v) => { const arr = DB.get(k) || []; arr.push(v); DB.set(k, arr) }
-};
+// ─── CONFIG & AUTH ────────────────────────────────────────────────────────────
+const API_BASE = 'https://jmichaels-manager-api.kurt-307.workers.dev';
+let AUTH_TOKEN = localStorage.getItem('jmt_token') || '';
+let CURRENT_USER = null;
+let SETTINGS = {};
+let CACHED_REPORTS = [];
+
+async function api(path, opts = {}) {
+  try {
+    const res = await fetch(API_BASE + path, {
+      ...opts,
+      headers: { 'Content-Type':'application/json','Authorization':'Bearer '+AUTH_TOKEN,...(opts.headers||{}) }
+    });
+    if (res.status === 401) { showLogin(); return null; }
+    return res.json();
+  } catch(e) { console.error('API error', e); return null; }
+}
+
+function showLogin() {
+  document.getElementById('auth-wrap').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+}
+function showApp() {
+  document.getElementById('auth-wrap').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  if (CURRENT_USER) {
+    const p = document.getElementById('user-pill');
+    if (p) p.textContent = CURRENT_USER.username + (CURRENT_USER.role === 'admin' ? ' (owner)' : '');
+    const b = document.getElementById('logout-btn');
+    if (b) b.style.display = '';
+  }
+}
+async function doLogin() {
+  const username = document.getElementById('au').value.trim();
+  const password = document.getElementById('ap').value;
+  const errEl = document.getElementById('aerr');
+  errEl.textContent = '';
+  if (!username||!password) { errEl.textContent='Enter username and password'; return; }
+  try {
+    const res = await fetch(API_BASE+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
+    const data = await res.json();
+    if (!res.ok) { errEl.textContent = data.error||'Login failed'; return; }
+    AUTH_TOKEN = data.token; CURRENT_USER = data.user;
+    localStorage.setItem('jmt_token', AUTH_TOKEN);
+    localStorage.setItem('jmt_user', JSON.stringify(CURRENT_USER));
+    showApp(); await init();
+  } catch(e) { errEl.textContent = 'Connection error — try again'; }
+}
+async function doLogout() {
+  await api('/api/auth/logout',{method:'POST'});
+  AUTH_TOKEN=''; CURRENT_USER=null;
+  localStorage.removeItem('jmt_token'); localStorage.removeItem('jmt_user');
+  showLogin();
+}
+async function checkAuth() {
+  if (!AUTH_TOKEN) { showLogin(); return false; }
+  const stored = localStorage.getItem('jmt_user');
+  if (stored) try { CURRENT_USER=JSON.parse(stored); } catch {}
+  const s = await api('/api/settings');
+  if (s===null) { showLogin(); return false; }
+  SETTINGS = s; showApp(); return true;
+}
 const $ = id => document.getElementById(id);
 const fmt = n => isNaN(n) ? '$0.00' : '$' + parseFloat(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const pct = n => isNaN(n) ? '0.0%' : parseFloat(n||0).toFixed(1) + '%';
@@ -1037,51 +1115,34 @@ const str = id => $(id)?.value?.trim() || '';
 let salesChartInst, costChartInst, cashChartInst, mcaChartInst, laborChartInst;
 
 // ─── NAVIGATION ───────────────────────────────────────────────────────────────
-function showSection(id, btn) {
+async function showSection(id, btn) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   $(id).classList.add('active');
   if(btn) btn.classList.add('active');
-  if(id === 'dashboard') loadDashboard();
-  if(id === 'history') loadHistory();
-  if(id === 'mca') loadMCASettings();
-  if(id === 'vendors') loadVendors();
-  if(id === 'cashflow') initCashFlowTable();
+  if(id === 'dashboard') await loadDashboard();
+  if(id === 'history') await loadHistory();
+  if(id === 'mca') await loadMCASettings();
+  if(id === 'vendors') await loadVendors();
+  if(id === 'cashflow') await initCashFlowTable();
   if(id === 'labor') renderLaborChart();
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
-function init() {
-  // Set current week badge
+async function init() {
   const now = new Date();
-  const weekStr = getISOWeek(now);
-  $('currentWeekBadge').textContent = 'Week ' + weekStr;
-
-  // Set default form values
+  $('currentWeekBadge').textContent = 'Week ' + getISOWeek(now);
   const weekInput = $('r_week');
-  if(weekInput) {
-    const y = now.getFullYear();
-    const w = getWeekNumber(now);
-    weekInput.value = y + '-W' + String(w).padStart(2,'0');
-  }
+  if(weekInput) { const y=now.getFullYear(),w=getWeekNumber(now); weekInput.value=y+'-W'+String(w).padStart(2,'0'); }
   const dtInput = $('r_submitted');
-  if(dtInput) {
-    const iso = new Date(now - now.getTimezoneOffset()*60000).toISOString().slice(0,16);
-    dtInput.value = iso;
-  }
+  if(dtInput) dtInput.value = new Date(now - now.getTimezoneOffset()*60000).toISOString().slice(0,16);
   const cfWeek = $('cf_week');
-  if(cfWeek) {
-    const y = now.getFullYear();
-    const w = getWeekNumber(now);
-    cfWeek.value = y + '-W' + String(w).padStart(2,'0');
-  }
+  if(cfWeek) { const y=now.getFullYear(),w=getWeekNumber(now); cfWeek.value=y+'-W'+String(w).padStart(2,'0'); }
 
   initAPTable();
   initActionTable();
-  initCashFlowTable();
-  loadSettings();
-  loadDashboard();
-  loadDraft();
+  await loadSettings();
+  await Promise.all([loadDashboard(), loadDraft()]);
 }
 
 function getWeekNumber(d) {
@@ -1133,8 +1194,7 @@ function calcMCA() {
 function calcLabor() {
   const cost = val('l_cost');
   const gross = val('s_gross');
-  const settings = DB.get('settings') || {};
-  const target = parseFloat(settings.labor_target || 30);
+  const target = parseFloat(SETTINGS.labor_target || 30);
   if(gross > 0 && cost > 0) {
     const p = cost/gross*100;
     $('l_pct').value = pct(p);
@@ -1156,9 +1216,8 @@ function calcFnB() {
   const fcogs = fbeg + fpurch - fend;
   $('f_cogs').value = fmt(fcogs);
   const gross = val('s_gross');
-  const settings = DB.get('settings') || {};
-  const ftarget = parseFloat(settings.food_target || 32);
-  const ltarget = parseFloat(settings.liquor_target || 22);
+  const ftarget = parseFloat(SETTINGS.food_target || 32);
+  const ltarget = parseFloat(SETTINGS.liquor_target || 22);
   if(gross > 0) {
     const fpct = fcogs/gross*100;
     $('f_pct').value = pct(fpct);
@@ -1244,11 +1303,13 @@ function addActionRow() {
 }
 
 // ─── CASH FLOW ────────────────────────────────────────────────────────────────
-function initCashFlowTable() {
+async function initCashFlowTable() {
   const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
   const tbody = $('cfTable');
   if(!tbody) return;
-  const saved = DB.get('cashflow_days') || {};
+  const cf = await api('/api/cashflow') || { week_data:{}, days_data:{} };
+  const saved = cf.days_data || {};
+  const wk = cf.week_data || {};
   tbody.innerHTML = '';
   days.forEach((day, i) => {
     const d = saved[day] || {};
@@ -1264,8 +1325,6 @@ function initCashFlowTable() {
     `;
     tbody.appendChild(tr);
   });
-  // Load saved weekly values
-  const wk = DB.get('cashflow_week') || {};
   if(wk.open) $('cf_open').value = wk.open;
   if(wk.payroll) $('cf_payroll').value = wk.payroll;
   if(wk.mca_weekly) $('cf_mca_weekly').value = wk.mca_weekly;
@@ -1274,11 +1333,12 @@ function initCashFlowTable() {
   if(wk.vendors) $('cf_vendors').value = wk.vendors;
   if(wk.other) $('cf_other').value = wk.other;
   if(wk.notes) $('cf_notes').value = wk.notes;
+  if(cf.week) $('cf_week').value = cf.week;
   calcCashFlow();
 }
 
 function calcCashFlow() {
-  const minCash = parseFloat((DB.get('settings')||{}).min_cash || 5000);
+  const minCash = parseFloat(SETTINGS.min_cash || 5000);
   let balance = val('cf_open');
   let totExpected = 0, totDeposits = 0, totMCA = 0, totOut = 0;
   const rows = $('cfTable').querySelectorAll('tr');
@@ -1317,24 +1377,18 @@ function calcCashFlow() {
   else { riskEl.value = '✅ LOW RISK — Adequate Cushion'; riskEl.style.color = 'var(--green)'; }
 }
 
-function saveCashFlow() {
+async function saveCashFlow() {
   const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
   const dayData = {};
-  const rows = $('cfTable').querySelectorAll('tr');
-  rows.forEach((tr, i) => {
+  $('cfTable').querySelectorAll('tr').forEach((tr, i) => {
     const inputs = tr.querySelectorAll('input');
-    dayData[days[i]] = {
-      expected: inputs[0]?.value, deposit: inputs[1]?.value,
-      mca: inputs[2]?.value, out: inputs[3]?.value
-    };
+    dayData[days[i]] = { expected:inputs[0]?.value, deposit:inputs[1]?.value, mca:inputs[2]?.value, out:inputs[3]?.value };
   });
-  DB.set('cashflow_days', dayData);
-  DB.set('cashflow_week', {
-    open: $('cf_open').value, payroll: $('cf_payroll').value,
-    mca_weekly: $('cf_mca_weekly').value, rent: $('cf_rent').value,
-    util: $('cf_util').value, vendors: $('cf_vendors').value,
-    other: $('cf_other').value, notes: $('cf_notes').value
-  });
+  await api('/api/cashflow', { method:'PUT', body: JSON.stringify({
+    week: $('cf_week').value || '',
+    week_data: { open:$('cf_open').value, payroll:$('cf_payroll').value, mca_weekly:$('cf_mca_weekly').value, rent:$('cf_rent').value, util:$('cf_util').value, vendors:$('cf_vendors').value, other:$('cf_other').value, notes:$('cf_notes').value },
+    days_data: dayData
+  })});
   showToast('Cash flow data saved.', 'green');
 }
 
@@ -1383,32 +1437,29 @@ function addBusinessDays(date, days) {
   return d;
 }
 
-function saveMCASettings() {
+async function saveMCASettings() {
   const data = {
-    provider: str('mca_provider'), account: str('mca_account'),
-    original: val('mca_original'), payback: val('mca_payback'),
-    factor: val('mca_factor'), start: str('mca_start'),
-    daily_debit: val('mca_daily_debit'), current_balance: val('mca_current_balance'),
-    debit_day: str('mca_debit_day'), target_sales: val('mca_target_sales'),
-    notes: str('mca_notes')
+    provider:str('mca_provider'), account:str('mca_account'),
+    original:val('mca_original'), payback:val('mca_payback'),
+    factor:val('mca_factor'), start:str('mca_start'),
+    daily_debit:val('mca_daily_debit'), current_balance:val('mca_current_balance'),
+    debit_day:str('mca_debit_day'), target_sales:val('mca_target_sales'), notes:str('mca_notes')
   };
-  DB.set('mca_settings', data);
+  await api('/api/mca', { method:'PUT', body: JSON.stringify(data) });
   showToast('MCA data saved.', 'green');
 }
 
-function loadMCASettings() {
-  const d = DB.get('mca_settings');
-  if(!d) return;
-  const fields = ['provider','account','factor','start','debit_day','notes'];
-  fields.forEach(f => { if($('mca_'+f) && d[f]) $('mca_'+f).value = d[f]; });
-  const numFields = ['original','payback','daily_debit','current_balance','target_sales'];
-  numFields.forEach(f => { if($('mca_'+f) && d[f]) $('mca_'+f).value = d[f]; });
+async function loadMCASettings() {
+  const d = await api('/api/mca');
+  if(!d || !Object.keys(d).length) return;
+  ['provider','account','factor','start','debit_day','notes'].forEach(f => { if($('mca_'+f) && d[f]) $('mca_'+f).value = d[f]; });
+  ['original','payback','daily_debit','current_balance','target_sales'].forEach(f => { if($('mca_'+f) && d[f]) $('mca_'+f).value = d[f]; });
   calcMCAFull();
 }
 
 // ─── VENDORS ──────────────────────────────────────────────────────────────────
-function loadVendors() {
-  const vendors = DB.get('vendors') || [];
+async function loadVendors() {
+  const vendors = await api('/api/vendors') || [];
   const tbody = $('vendorMasterTable');
   tbody.innerHTML = '';
   if(!vendors.length) { addVendorMaster(); return; }
@@ -1451,26 +1502,21 @@ function addVendorMasterRow(v) {
   tbody.appendChild(tr);
 }
 
-function saveVendors() {
-  const rows = $('vendorMasterTable').querySelectorAll('tr');
+async function saveVendors() {
   const vendors = [];
-  rows.forEach(tr => {
-    const inputs = tr.querySelectorAll('input');
-    const selects = tr.querySelectorAll('select');
-    vendors.push({
-      name: inputs[0]?.value, contact: inputs[1]?.value,
-      terms: inputs[2]?.value, avg_weekly: inputs[3]?.value,
-      balance: inputs[4]?.value, cat: selects[0]?.value,
-      status: selects[1]?.value, priority: selects[2]?.value
-    });
+  $('vendorMasterTable').querySelectorAll('tr').forEach(tr => {
+    const inputs = tr.querySelectorAll('input'), selects = tr.querySelectorAll('select');
+    vendors.push({ name:inputs[0]?.value, contact:inputs[1]?.value, terms:inputs[2]?.value, avg_weekly:inputs[3]?.value, balance:inputs[4]?.value, cat:selects[0]?.value, status:selects[1]?.value, priority:selects[2]?.value });
   });
-  DB.set('vendors', vendors);
+  await api('/api/vendors', { method:'PUT', body: JSON.stringify(vendors) });
   showToast('Vendors saved.', 'green');
 }
 
 // ─── SETTINGS ─────────────────────────────────────────────────────────────────
-function loadSettings() {
-  const s = DB.get('settings') || {};
+async function loadSettings() {
+  const s = await api('/api/settings');
+  if(!s) return;
+  SETTINGS = s;
   if(s.name) $('set_name').value = s.name;
   if(s.owner) $('set_owner').value = s.owner;
   if(s.address) $('set_address').value = s.address;
@@ -1484,15 +1530,14 @@ function loadSettings() {
   if(s.rent) $('set_rent').value = s.rent;
 }
 
-function saveSettings() {
+async function saveSettings() {
   const s = {
-    name: str('set_name'), owner: str('set_owner'),
-    address: str('set_address'), phone: str('set_phone'), email: str('set_email'),
-    labor_target: val('set_labor_target'), food_target: val('set_food_target'),
-    liquor_target: val('set_liquor_target'), min_cash: val('set_min_cash'),
-    sales_target: val('set_sales_target'), rent: val('set_rent')
+    name:str('set_name'), owner:str('set_owner'), address:str('set_address'), phone:str('set_phone'), email:str('set_email'),
+    labor_target:val('set_labor_target'), food_target:val('set_food_target'), liquor_target:val('set_liquor_target'),
+    min_cash:val('set_min_cash'), sales_target:val('set_sales_target'), rent:val('set_rent')
   };
-  DB.set('settings', s);
+  await api('/api/settings', { method:'PUT', body: JSON.stringify(s) });
+  SETTINGS = s;
   showToast('Settings saved.', 'green');
 }
 
@@ -1570,35 +1615,25 @@ function collectReport() {
   };
 }
 
-function saveReport() {
-  const r = collectReport();
-  if(!r.manager) { showToast('Manager name is required.', 'red'); return; }
-  if(!r.week) { showToast('Report week is required.', 'red'); return; }
-  if(!r.sales.gross) { showToast('Total gross sales is required.', 'red'); return; }
-
-  const reports = DB.get('reports') || [];
-  const existIdx = reports.findIndex(x => x.week === r.week);
-  if(existIdx >= 0) {
-    if(!confirm('A report for this week already exists. Overwrite it?')) return;
-    reports[existIdx] = r;
-  } else {
-    reports.push(r);
-  }
-  DB.set('reports', reports);
-  DB.set('draft', null);
-  showToast('✅ Report submitted successfully for week ' + r.week, 'green');
-  loadDashboard();
+async function saveReport() {
+  const data = collectReport();
+  if(!data.manager) { showToast('Manager name is required.', 'red'); return; }
+  if(!data.week) { showToast('Report week is required.', 'red'); return; }
+  if(!data.sales.gross) { showToast('Total gross sales is required.', 'red'); return; }
+  await api('/api/reports', { method:'POST', body: JSON.stringify({ week:data.week, manager_name:data.manager, data }) });
+  await api('/api/draft', { method:'DELETE' });
+  showToast('✅ Report submitted successfully for week ' + data.week, 'green');
+  await loadDashboard();
 }
 
-function saveDraft() {
-  DB.set('draft', collectReport());
+async function saveDraft() {
+  await api('/api/draft', { method:'PUT', body: JSON.stringify(collectReport()) });
   showToast('Draft saved.', 'blue');
 }
 
-function loadDraft() {
-  const d = DB.get('draft');
+async function loadDraft() {
+  const d = await api('/api/draft');
   if(!d) return;
-  // Restore basic fields
   if(d.manager && $('r_manager')) $('r_manager').value = d.manager;
   if(d.week && $('r_week')) $('r_week').value = d.week;
 }
@@ -1612,10 +1647,10 @@ function clearForm() {
 }
 
 // ─── DASHBOARD ────────────────────────────────────────────────────────────────
-function loadDashboard() {
-  const reports = DB.get('reports') || [];
-  const settings = DB.get('settings') || {};
-  const mca = DB.get('mca_settings') || {};
+async function loadDashboard() {
+  const [reports, mca] = await Promise.all([api('/api/reports'), api('/api/mca')]);
+  if(!reports || !mca) return;
+  CACHED_REPORTS = reports;
 
   const alerts = $('dashAlerts');
   alerts.innerHTML = '';
@@ -1625,8 +1660,8 @@ function loadDashboard() {
     return;
   }
 
-  const latest = reports[reports.length - 1];
-  const r = latest;
+  const latest = reports[0]; // API returns most-recent first
+  const r = latest.data;
   const gross = r.sales.gross;
   const laborPct = gross > 0 ? r.labor.cost/gross*100 : 0;
   const fcogs = r.fnb.fBeg + r.fnb.fPurch - r.fnb.fEnd;
@@ -1647,19 +1682,19 @@ function loadDashboard() {
   const cashNet = r.cash.checking + r.cash.savings + r.cash.petty - r.cash.outstanding;
   $('kpi-cash').textContent = fmt(cashNet);
 
-  const lt = parseFloat(settings.labor_target||30);
+  const lt = parseFloat(SETTINGS.labor_target||30);
   $('kpi-labor').textContent = pct(laborPct);
   const lStatus = $('kpi-labor-status');
   lStatus.textContent = laborPct <= lt ? '✅ On Target' : '🔴 Over Target';
   lStatus.className = 'kpi-trend ' + (laborPct <= lt ? 'up' : 'down');
 
-  const ft = parseFloat(settings.food_target||32);
+  const ft = parseFloat(SETTINGS.food_target||32);
   $('kpi-food').textContent = pct(foodPct);
   const fStatus = $('kpi-food-status');
   fStatus.textContent = foodPct <= ft ? '✅ On Target' : '🔴 Over Target';
   fStatus.className = 'kpi-trend ' + (foodPct <= ft ? 'up' : 'down');
 
-  const lt2 = parseFloat(settings.liquor_target||22);
+  const lt2 = parseFloat(SETTINGS.liquor_target||22);
   $('kpi-liquor').textContent = pct(liqPct);
   const lqStatus = $('kpi-liquor-status');
   lqStatus.textContent = liqPct <= lt2 ? '✅ On Target' : '🔴 Over Target';
@@ -1689,7 +1724,7 @@ function loadDashboard() {
   if(laborPct > lt + 4) alertsHtml.push('<div class="alert alert-red">🔴 <strong>Labor Alert:</strong> Labor % is ' + pct(laborPct) + ' — significantly over target of ' + lt + '%. Immediate scheduling review required.</div>');
   if(foodPct > ft + 5) alertsHtml.push('<div class="alert alert-red">🔴 <strong>Food Cost Alert:</strong> Food cost % is ' + pct(foodPct) + ' — over target of ' + ft + '%. Check inventory and waste.</div>');
   if(pastDue > 0) alertsHtml.push('<div class="alert alert-yellow">⚠️ <strong>Past Due Vendors:</strong> ' + fmt(pastDue) + ' in past-due balances. Address immediately to avoid supply cutoff.</div>');
-  const minCash = parseFloat(settings.min_cash || 5000);
+  const minCash = parseFloat(SETTINGS.min_cash || 5000);
   if(cashNet < minCash) alertsHtml.push('<div class="alert alert-red">🔴 <strong>Cash Alert:</strong> Net cash (' + fmt(cashNet) + ') is below minimum cushion of ' + fmt(minCash) + '. Monitor closely.</div>');
   if(alertsHtml.length) alerts.innerHTML = alertsHtml.join('');
 
@@ -1717,8 +1752,9 @@ function renderSalesChart(reports) {
   const ctx = $('salesChart');
   if(!ctx) return;
   if(salesChartInst) salesChartInst.destroy();
-  const labels = reports.slice(-8).map(r => r.week);
-  const data = reports.slice(-8).map(r => r.sales.gross);
+  const chartData = reports.slice(0,8).reverse();
+  const labels = chartData.map(r => r.week);
+  const data = chartData.map(r => r.data.sales.gross);
   salesChartInst = new Chart(ctx, {
     type: 'line',
     data: {
@@ -1743,10 +1779,11 @@ function renderSalesChart(reports) {
   });
 }
 
-function renderCostChart(r) {
+function renderCostChart(latest) {
   const ctx = $('costChart');
   if(!ctx) return;
   if(costChartInst) costChartInst.destroy();
+  const r = latest.data;
   const gross = r.sales.gross;
   const laborPct = gross > 0 ? r.labor.cost/gross*100 : 0;
   const fcogs = r.fnb.fBeg + r.fnb.fPurch - r.fnb.fEnd;
@@ -1798,12 +1835,12 @@ function renderMCAChart(mca, reportMCA) {
 }
 
 function renderLaborChart() {
-  const reports = DB.get('reports') || [];
   const ctx = $('laborChart');
-  if(!ctx || !reports.length) return;
+  if(!ctx || !CACHED_REPORTS.length) return;
   if(laborChartInst) laborChartInst.destroy();
-  const labels = reports.slice(-8).map(r => r.week);
-  const laborData = reports.slice(-8).map(r => r.sales.gross > 0 ? (r.labor.cost/r.sales.gross*100).toFixed(1) : 0);
+  const chartData = CACHED_REPORTS.slice(0,8).reverse();
+  const labels = chartData.map(r => r.week);
+  const laborData = chartData.map(r => r.data.sales.gross > 0 ? (r.data.labor.cost/r.data.sales.gross*100).toFixed(1) : 0);
   laborChartInst = new Chart(ctx, {
     type: 'line',
     data: {
@@ -1825,22 +1862,25 @@ function renderLaborChart() {
 }
 
 // ─── HISTORY ──────────────────────────────────────────────────────────────────
-function loadHistory() {
-  const reports = DB.get('reports') || [];
+async function loadHistory() {
+  const reports = await api('/api/reports');
+  if(!reports) return;
+  CACHED_REPORTS = reports;
   const el = $('historyList');
   if(!reports.length) { el.innerHTML = '<p style="color:var(--muted)">No reports submitted yet.</p>'; return; }
-  el.innerHTML = reports.slice().reverse().map(r => {
-    const gross = r.sales.gross;
-    const laborPct = gross > 0 ? (r.labor.cost/gross*100).toFixed(1) : '—';
-    const fcogs = r.fnb.fBeg + r.fnb.fPurch - r.fnb.fEnd;
+  el.innerHTML = reports.map(r => {
+    const d = r.data;
+    const gross = d.sales.gross;
+    const laborPct = gross > 0 ? (d.labor.cost/gross*100).toFixed(1) : '—';
+    const fcogs = d.fnb.fBeg + d.fnb.fPurch - d.fnb.fEnd;
     const foodPct = gross > 0 ? (fcogs/gross*100).toFixed(1) : '—';
     return `<div class="history-item" onclick="viewReport('${r.id}')">
       <div>
-        <div style="font-weight:700;color:var(--text)">${r.week} — ${r.manager}</div>
-        <div class="history-meta">Submitted: ${new Date(r.submittedAt).toLocaleString()} · Sales: ${fmt(gross)} · Labor: ${laborPct}% · Food: ${foodPct}%</div>
+        <div style="font-weight:700;color:var(--text)">${r.week} — ${r.manager_name}</div>
+        <div class="history-meta">Submitted: ${new Date(r.submitted_at).toLocaleString()} · Sales: ${fmt(gross)} · Labor: ${laborPct}% · Food: ${foodPct}%</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
-        <span class="badge ${r.ontime==='yes'?'badge-green':'badge-red'}">${r.ontime==='yes'?'On Time':'Late'}</span>
+        <span class="badge ${d.ontime==='yes'?'badge-green':'badge-red'}">${d.ontime==='yes'?'On Time':'Late'}</span>
         <button class="btn btn-danger btn-sm no-print" onclick="deleteReport('${r.id}',event)">Delete</button>
       </div>
     </div>`;
@@ -1848,15 +1888,15 @@ function loadHistory() {
 }
 
 function viewReport(id) {
-  const reports = DB.get('reports') || [];
-  const r = reports.find(x => String(x.id) === String(id));
-  if(!r) return;
+  const rep = CACHED_REPORTS.find(x => x.id === id);
+  if(!rep) return;
+  const r = rep.data;
   const fcogs = r.fnb.fBeg + r.fnb.fPurch - r.fnb.fEnd;
   const gross = r.sales.gross;
   const lcogs = r.fnb.lqBeg + r.fnb.lqPurch - r.fnb.lqEnd;
   const bev = r.sales.bev || gross * 0.4;
   $('reportModalContent').innerHTML = `
-    <h3 style="color:var(--gold);margin-bottom:20px">Week ${r.week} — ${r.manager}</h3>
+    <h3 style="color:var(--gold);margin-bottom:20px">Week ${rep.week} — ${rep.manager_name}</h3>
     <div class="kpi-grid" style="margin-bottom:20px">
       <div class="kpi"><div class="kpi-label">Gross Sales</div><div class="kpi-value">${fmt(gross)}</div></div>
       <div class="kpi"><div class="kpi-label">Cash (Checking)</div><div class="kpi-value">${fmt(r.cash.checking)}</div></div>
@@ -1887,18 +1927,18 @@ function viewReport(id) {
 function closeModal() { $('reportModal').style.display = 'none'; }
 window.addEventListener('click', e => { if(e.target === $('reportModal')) closeModal(); });
 
-function deleteReport(id, e) {
+async function deleteReport(id, e) {
   e.stopPropagation();
   if(!confirm('Delete this report?')) return;
-  const reports = (DB.get('reports')||[]).filter(r => String(r.id) !== String(id));
-  DB.set('reports', reports);
-  loadHistory();
+  await api('/api/reports/' + id, { method:'DELETE' });
+  await loadHistory();
 }
 
-function confirmClearHistory() {
+async function confirmClearHistory() {
   if(!confirm('Delete ALL report history? This cannot be undone.')) return;
-  DB.set('reports', []);
-  loadHistory();
+  const reports = await api('/api/reports') || [];
+  await Promise.all(reports.map(r => api('/api/reports/' + r.id, { method:'DELETE' })));
+  await loadHistory();
 }
 
 // ─── UTILS ────────────────────────────────────────────────────────────────────
@@ -1914,7 +1954,10 @@ function showToast(msg, color) {
 function printReport() { window.print(); }
 
 // ─── BOOT ─────────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', async () => {
+  const ok = await checkAuth();
+  if(ok) await init();
+});
 </script>
 </body>
 </html>
