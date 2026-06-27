@@ -39,7 +39,7 @@ async function getUser(db, req) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     if (request.method === 'OPTIONS') return new Response(null, { headers: CORS });
 
     const url = new URL(request.url);
@@ -99,6 +99,23 @@ export default {
             data = excluded.data,
             submitted_at = excluded.submitted_at
         `).bind(rid, week, manager_name || '', JSON.stringify(data), now, user.id).run();
+
+        // Push notification via ntfy.sh
+        const d = data || {};
+        const sales = d.s_gross ? '$' + parseFloat(d.s_gross).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '—';
+        const labor = d.l_pct || '—';
+        const cash  = d.c_checking ? '$' + parseFloat(d.c_checking).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '—';
+        const mca   = d.m_balance ? '$' + parseFloat(d.m_balance).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '—';
+        ctx.waitUntil(fetch('https://ntfy.sh/jmichaels-reports-k9m3p7', {
+          method: 'POST',
+          headers: {
+            'Title': `Weekly Report Submitted — ${week}`,
+            'Priority': 'default',
+            'Tags': 'restaurant,chart_with_upwards_trend',
+          },
+          body: `Manager: ${manager_name || 'Unknown'}\nSales: ${sales}\nLabor %: ${labor}\nCash (Checking): ${cash}\nMCA Balance: ${mca}`,
+        }));
+
         return json({ ok: true });
       }
     }
