@@ -159,6 +159,15 @@ td select{padding:6px 8px;font-size:13px}
 .calc-note{font-size:11px;color:var(--muted);margin-top:4px;font-style:italic}
 .highlight-box{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:6px;padding:14px;margin:12px 0}
 .highlight-box strong{color:var(--gold)}
+
+/* MESSAGE OWNER */
+.msg-fab{position:fixed;bottom:24px;right:24px;z-index:500;background:var(--gold);color:#000;border:none;border-radius:50px;padding:12px 20px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.4);display:flex;align-items:center;gap:8px;transition:background .2s}
+.msg-fab:hover{background:var(--gold2)}
+.msg-panel{position:fixed;bottom:80px;right:24px;z-index:600;width:320px;background:var(--surface);border:1px solid var(--gold);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.5);padding:18px;display:none}
+.msg-panel.open{display:block}
+.msg-panel-title{font-size:13px;font-weight:700;color:var(--gold);margin-bottom:12px}
+.msg-panel textarea{width:100%;min-height:90px;resize:none;margin-bottom:10px}
+.msg-panel-row{display:flex;gap:8px;justify-content:flex-end}
 </style>
 </head>
 <body>
@@ -1040,6 +1049,18 @@ td select{padding:6px 8px;font-size:13px}
     </div>
     <div id="reportModalContent"></div>
   </div>
+</div>
+
+<!-- MESSAGE OWNER FAB -->
+<button class="msg-fab no-print" onclick="toggleMsgPanel()">&#128172; Message Owner</button>
+<div class="msg-panel no-print" id="msgPanel">
+  <div class="msg-panel-title">&#128172; Send Message to Owner</div>
+  <textarea id="msgText" placeholder="Type your message..."></textarea>
+  <div class="msg-panel-row">
+    <button class="btn btn-ghost btn-sm" onclick="toggleMsgPanel()">Cancel</button>
+    <button class="btn btn-primary btn-sm" onclick="sendOwnerMessage()">Send</button>
+  </div>
+  <div id="msgStatus" style="font-size:12px;margin-top:8px;min-height:16px"></div>
 </div>
 
 </div><!-- /app -->
@@ -2003,6 +2024,46 @@ function showToast(msg, color) {
 }
 
 function printReport() { window.print(); }
+
+// ─── MESSAGE OWNER ────────────────────────────────────────────────────────────
+function toggleMsgPanel() {
+  const panel = $('msgPanel');
+  panel.classList.toggle('open');
+  if(panel.classList.contains('open')) $('msgText').focus();
+  $('msgStatus').textContent = '';
+}
+
+async function sendOwnerMessage() {
+  const text = $('msgText').value.trim();
+  if(!text) return;
+  const sender = CURRENT_USER ? CURRENT_USER.username : 'Portal User';
+  const role = CURRENT_USER?.role === 'admin' ? 'Owner' : 'Manager';
+  $('msgStatus').style.color = 'var(--muted)';
+  $('msgStatus').textContent = 'Sending...';
+  try {
+    const res = await fetch('https://ntfy.sh/jmichaels-owner-msgs-4f8r2k', {
+      method: 'POST',
+      headers: {
+        'Title': `${role} Message — ${sender}`,
+        'Priority': 'default',
+        'Tags': 'speech_balloon',
+      },
+      body: text,
+    });
+    if(res.ok) {
+      $('msgStatus').style.color = 'var(--green)';
+      $('msgStatus').textContent = 'Message sent!';
+      $('msgText').value = '';
+      setTimeout(() => toggleMsgPanel(), 1500);
+    } else {
+      $('msgStatus').style.color = 'var(--red)';
+      $('msgStatus').textContent = 'Failed — try again';
+    }
+  } catch(e) {
+    $('msgStatus').style.color = 'var(--red)';
+    $('msgStatus').textContent = 'Connection error — try again';
+  }
+}
 
 // ─── BOOT ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
